@@ -1,6 +1,10 @@
 const YAML = require("yaml");
 const axios = require("axios");
 
+export const config = {
+  maxDuration: 30,
+};
+
 module.exports = async (req, res) => {
   const url = req.query.url;
   const target = req.query.target;
