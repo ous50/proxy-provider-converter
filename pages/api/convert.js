@@ -14,6 +14,11 @@ module.exports = async (req, res) => {
   console.log(`Fetching url: ${url}`);
   let configFile = null;
   let subscriptionUserInfo = null;
+  let subscriptionUserUpload = null;
+  let subscriptionUserDownload = null;
+  let subscriptionUserTotal = null;
+  let subscriptionUserRemaining = null;
+  let subscriptionUserExpires = null;
   try {
     const result = await axios({
       url,
@@ -61,12 +66,17 @@ module.exports = async (req, res) => {
       const total = parseInt(parsedInfo.total || 0);
       const remaining = total - upload - download;
       const expires = parsedInfo.expire ? formatTimestamp(parsedInfo.expire): "Never";
+      subscriptionUserExpires = expires;
       
       // 格式化显示
       const uploadStr = formatBytes(upload);
+      subscriptionUserUpload = uploadStr;
       const downloadStr = formatBytes(download);
+      subscriptionUserDownload = downloadStr;
       const totalStr = formatBytes(total);
+      subscriptionUserTotal = totalStr;
       const remainingStr = formatBytes(remaining > 0 ? remaining : 0);
+      subscriptionUserRemaining = remainingStr;
       
       console.log(`User Subscription Info: ${subscriptionUserInfo}`);
       console.log(`    User Subscription Upload: ${uploadStr}
@@ -85,6 +95,7 @@ module.exports = async (req, res) => {
 
   console.log(`Parsing YAML`);
   let config = null;
+  let needSubInfo = true;
   try {
     config = YAML.parse(configFile);
     console.log(`👌 Parsed YAML`);
@@ -103,6 +114,15 @@ module.exports = async (req, res) => {
       ["ss", "vmess", "trojan", "hysteria2", "tuic", "snell"].includes(proxy.type)
     );
     const surgeProxies = supportedProxies.map((proxy) => {
+      // Regex to detect subscription info in proxy name
+      const trafficRegex = /(?:剩余|剩餘|剩下|余额|余額|流量|套餐|重置|到期|过期|有效|剩余时间|重置时间|剩余流量|剩餘流量|可用|remaining|left|data|transfer|quota)/i;
+      const expiryRegex = /(?:过期|到期|有效期)/i;
+      
+      if ( trafficRegex.test(proxy.name) || trafficRegex.test(proxy.name) ) {
+        needSubInfo = false;
+        console.log(`Subscription info detected, disabling SubInfo display`);
+      }
+
       const common = `${proxy.name} = ${proxy.type}, ${proxy.server}, ${proxy.port}`;
       let result = `${common}`;
       if (!proxy.network) proxy.network = "tcp";
@@ -274,13 +294,22 @@ module.exports = async (req, res) => {
       return result;
     });
     const proxies = surgeProxies.filter((p) => p !== undefined);
+    // Add a dummy item at the beginning showing the subscription info if available
+    if (subscriptionUserInfo && needSubInfo) {
+      if (subscriptionUserExpires !== "Never") {
+        const dummyItemExpiryDate = `过期日\：${subscriptionUserExpires}: http, 127.0.0.1, 11441`;
+        proxies.unshift(dummyItemExpiryDate);
+      }
+      const dummyItemRemaining = `剩余流量\：${subscriptionUserRemaining}: http, 127.0.0.1,11441`;
+      proxies.unshift(dummyItemRemaining);
+    }
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('subscription-userinfo', `${subscriptionUserInfo}`);
     res.status(200).send(proxies.join("\n"));
   } else {
     const response = YAML.stringify({ proxies: config.proxies });
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('subscription-userinfo', `${subscriptionUserInfo}`);
-    console.log(`subscription-userinfo: ${subscriptionUserInfo}`);
     res.status(200).send(response);
   }
 };
