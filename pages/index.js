@@ -85,7 +85,7 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
           </h3>
           <p className="mt-2">
             <a
-              href="https://github.com/Dreamacro/clash/wiki/configuration#proxy-providers"
+              href="https://wiki.metacubex.one/en/config/proxy-providers/"
               className="text-yellow-600 transition hover:text-yellow-500"
             >
               Proxy Provider
@@ -178,11 +178,11 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
             <li>
               1. 打开{" "}
               <a
-                href="https://github.com/qier222/proxy-provider-converter"
+                href="https://github.com/ous50/proxy-provider-converter"
                 target="_blank"
                 className="text-yellow-600 transition hover:text-yellow-500"
               >
-                https://github.com/qier222/proxy-provider-converter
+                https://github.com/ous50/proxy-provider-converter
               </a>
             </li>
             <li>2. 点击右上角的 Fork 按钮</li>
@@ -212,7 +212,7 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
           <ul className="mt-1 list-disc list-inside	">
             <li>
               <a
-                href="https://github.com/Dreamacro/clash/wiki/configuration#proxy-providers"
+                href="https://wiki.metacubex.one/en/config/proxy-providers/"
                 target="_blank"
                 className="text-yellow-600 transition hover:text-yellow-500"
               >
