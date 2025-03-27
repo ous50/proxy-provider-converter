@@ -297,10 +297,10 @@ module.exports = async (req, res) => {
     // Add a dummy item at the beginning showing the subscription info if available
     if (subscriptionUserInfo && needSubInfo) {
       if (subscriptionUserExpires !== "Never") {
-        const dummyItemExpiryDate = `过期日\：${subscriptionUserExpires}: http, 127.0.0.1, 11441`;
+        const dummyItemExpiryDate = `过期日\：${subscriptionUserExpires} = http, 127.0.0.1, 11441`;
         proxies.unshift(dummyItemExpiryDate);
       }
-      const dummyItemRemaining = `剩余流量\：${subscriptionUserRemaining}: http, 127.0.0.1,11441`;
+      const dummyItemRemaining = `剩余流量\：${subscriptionUserRemaining} = http, 127.0.0.1,11441`;
       proxies.unshift(dummyItemRemaining);
     }
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
