@@ -12,14 +12,13 @@
 
 你可以根据下面步骤你可以零成本部署一个属于你的转换工具。
 
-前期准备：你需要一个 GitHub 账号
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fous50%2Fproxy-provider-converter)
 
-1. 点击右上角的 Fork 按钮
+1. 点击上角的按钮
 2. 打开 [Vercel.com](https://vercel.com)，使用 GitHub 登录。
-3. 选择 New Project，点击 proxy-provider-converter 旁边的 Import 按钮, 点击 PERSONAL ACCOUNT 旁边的 Select，最后点击 Deploy
-4. 等待部署完成后点击 Vercel 项目面板上的 Visit 按钮就可以访问你部署的版本了
+3. 等待部署完成后点击 Vercel 项目面板上的 Visit 按钮就可以访问你部署的版本了
 
 ### 资源
 
-- [Clash Wiki 中的 Proxy Providers 章节](https://github.com/Dreamacro/clash/wiki/configuration#proxy-providers)
-- [Surge Policy Group 文档](https://manual.nssurge.com/policy/group.html)
+- [Metacubex(clash) Wiki 中的 Proxy Providers 章节](https://wiki.metacubex.one/config/proxy-providers/)
+- [Surge Policy Group 文档](https://manual.nssurge.com/policy-group/policy-including.html)

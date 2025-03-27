@@ -9,6 +9,11 @@ if (typeof window !== "undefined") {
   host = window.location.origin;
 }
 
+let surgeManualURL =
+  "https://manual.nssurge.com/policy-group/policy-including.html";
+let clashManualURL =
+  "https://wiki.metacubex.one/config/proxy-providers/";
+
 export default function Home() {
   const [url, setUrl] = useState("");
   const [target, setTarget] = useState("clash");
@@ -85,7 +90,7 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
           </h3>
           <p className="mt-2">
             <a
-              href="https://wiki.metacubex.one/en/config/proxy-providers/"
+              href={clashManualURL}
               className="text-yellow-600 transition hover:text-yellow-500"
             >
               Proxy Provider
@@ -176,7 +181,19 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
           </p>
           <ul className="mt-1">
             <li>
-              1. 打开{" "}
+              1. 点击下面的按钮
+              <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fous50%2Fproxy-provider-converter"><img src="https://vercel.com/button" alt="Deploy with Vercel"/></a>
+            </li>
+            <li>2. 使用 GitHub 登录</li>
+            <li>3. 跟着提示完成部署</li>
+            <li>4. 等待部署完成后点击 Vercel 项目面板上的 Visit 按钮就可以访问你部署的版本了</li>
+          </ul>
+        </div>
+        <div className="w-full text-gray-900 mt-14">
+          <h3 className="text-lg md:text-xl font-bold">资源</h3>
+          <ul className="mt-1 list-disc list-inside	">
+            <li>
+              Source Code:{" "}
               <a
                 href="https://github.com/ous50/proxy-provider-converter"
                 target="_blank"
@@ -185,43 +202,18 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
                 https://github.com/ous50/proxy-provider-converter
               </a>
             </li>
-            <li>2. 点击右上角的 Fork 按钮</li>
             <li>
-              3. 打开{" "}
               <a
-                href="https://vercel.com"
+                href={clashManualURL}
                 target="_blank"
                 className="text-yellow-600 transition hover:text-yellow-500"
               >
-                Vercel.com
-              </a>
-              ，使用 GitHub 登录。
-            </li>
-            <li>
-              4. 选择 New Project，点击 proxy-provider-converter 旁边的 Import
-              按钮, 点击 PERSONAL ACCOUNT 旁边的 Select，最后点击 Deploy
-            </li>
-            <li>
-              5. 等待部署完成后点击 Vercel 项目面板上的 Visit
-              按钮就可以访问你部署的版本了
-            </li>
-          </ul>
-        </div>
-        <div className="w-full text-gray-900 mt-14">
-          <h3 className="text-lg md:text-xl font-bold">资源</h3>
-          <ul className="mt-1 list-disc list-inside	">
-            <li>
-              <a
-                href="https://wiki.metacubex.one/en/config/proxy-providers/"
-                target="_blank"
-                className="text-yellow-600 transition hover:text-yellow-500"
-              >
-                Clash Wiki 中的 Proxy Providers 章节
+                Metacubex(clash) Wiki 中的 Proxy Providers 章节
               </a>
             </li>
             <li>
               <a
-                href="https://manual.nssurge.com/policy/group.html"
+                href={surgeManualURL}
                 target="_blank"
                 className="text-yellow-600 transition hover:text-yellow-500"
               >
