@@ -14,7 +14,7 @@
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fous50%2Fproxy-provider-converter)
 
-1. 点击上角的按钮
+1. 点击上方的按钮
 2. 打开 [Vercel.com](https://vercel.com)，使用 GitHub 登录。
 3. 等待部署完成后点击 Vercel 项目面板上的 Visit 按钮就可以访问你部署的版本了
 
