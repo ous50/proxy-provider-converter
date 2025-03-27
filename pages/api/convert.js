@@ -19,6 +19,7 @@ module.exports = async (req, res) => {
   let subscriptionUserTotal = null;
   let subscriptionUserRemaining = null;
   let subscriptionUserExpires = null;
+  let subscriptionUserUsed = null;
   try {
     const result = await axios({
       url,
@@ -30,21 +31,21 @@ module.exports = async (req, res) => {
     configFile = result.data;
     function formatBytes(bytes, decimals = 2) {
       if (bytes === 0) return '0 Bytes';
-      
+
       const k = 1024;
       const dm = decimals < 0 ? 0 : decimals;
       const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
-      
+
       // 计算合适的单位
       const i = Math.floor(Math.log(bytes) / Math.log(k));
-      
+
       return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
     }
-    
+
     function formatTimestamp(timestamp) {
       if (!timestamp || isNaN(timestamp)) return "Never";
       const date = new Date(timestamp * 1000);
-      return date.toLocaleDateString();
+      return date.toLocaleDateString("zh-CN");
     }
     // 获取订阅信息
     subscriptionUserInfo = result.headers["subscription-userinfo"];
@@ -52,23 +53,26 @@ module.exports = async (req, res) => {
       // 解析信息
       const parts = subscriptionUserInfo.split(';');
       const parsedInfo = {};
-      
+
       parts.forEach(part => {
         const [key, value] = part.split('=');
         if (key && value) {
           parsedInfo[key.trim()] = value.trim();
         }
       });
-      
+
       // 提取数值
       const upload = parseInt(parsedInfo.upload || 0);
       const download = parseInt(parsedInfo.download || 0);
       const total = parseInt(parsedInfo.total || 0);
+      const used = upload + download;
       const remaining = total - upload - download;
-      const expires = parsedInfo.expire ? formatTimestamp(parsedInfo.expire): "Never";
+      const expires = parsedInfo.expire ? formatTimestamp(parsedInfo.expire) : "Never";
       subscriptionUserExpires = expires;
-      
+
       // 格式化显示
+      const usedStr = formatBytes(used);
+      subscriptionUserUsed = usedStr;
       const uploadStr = formatBytes(upload);
       subscriptionUserUpload = uploadStr;
       const downloadStr = formatBytes(download);
@@ -77,15 +81,16 @@ module.exports = async (req, res) => {
       subscriptionUserTotal = totalStr;
       const remainingStr = formatBytes(remaining > 0 ? remaining : 0);
       subscriptionUserRemaining = remainingStr;
-      
+
       console.log(`User Subscription Info: ${subscriptionUserInfo}`);
       console.log(`    User Subscription Upload: ${uploadStr}
     User Subscription Download: ${downloadStr}
+    User Subscription Used: ${usedStr}
     User Subscription Total: ${totalStr}
     User Subscription Remaining: ${remainingStr}
     User Subscription Expires: ${expires}`);
     }
-    
+
   } catch (error) {
     res.status(400).send(`Unable to get url, error: ${error}`);
     return;
@@ -117,8 +122,8 @@ module.exports = async (req, res) => {
       // Regex to detect subscription info in proxy name
       const trafficRegex = /(?:剩余|剩餘|剩下|余额|余額|流量|套餐|重置|到期|过期|有效|剩余时间|重置时间|剩余流量|剩餘流量|可用|remaining|left|data|transfer|quota)/i;
       const expiryRegex = /(?:过期|到期|有效期)/i;
-      
-      if ( trafficRegex.test(proxy.name) || trafficRegex.test(proxy.name) ) {
+
+      if (trafficRegex.test(proxy.name) || trafficRegex.test(proxy.name)) {
         needSubInfo = false;
         console.log(`Subscription info detected, disabling SubInfo display`);
       }
@@ -145,9 +150,8 @@ module.exports = async (req, res) => {
           if (proxy.plugin === "obfs") {
             const mode = proxy?.["plugin-opts"].mode;
             const host = proxy?.["plugin-opts"].host;
-            result = `${result}, obfs=${mode}${
-              host ? `, obfs-host=example.com ${host}` : ""
-            }`;
+            result = `${result}, obfs=${mode}${host ? `, obfs-host=example.com ${host}` : ""
+              }`;
           }
           break;
         case "vmess":
@@ -171,8 +175,8 @@ module.exports = async (req, res) => {
           }
           break;
         case "trojan":
-           // ProxyTrojan = trojan, example.com, 2021, username=user, password=12345, skip-cert-verify=true, sni=example.com
-           if (["h2", "http", "grpc"].includes(proxy.network)) {
+          // ProxyTrojan = trojan, example.com, 2021, username=user, password=12345, skip-cert-verify=true, sni=example.com
+          if (["h2", "http", "grpc"].includes(proxy.network)) {
             console.log(
               `Skip convert proxy ${proxy.name} because Surge probably doesn't support Trojan(${proxy.network})`
             );
@@ -227,7 +231,7 @@ module.exports = async (req, res) => {
             result = `${result}, obfs-host=${proxy["obfs-opts"].host}`;
           }
           break;
-        }
+      }
 
       // IP version
       if (proxy["ip-version"]) {
@@ -248,28 +252,28 @@ module.exports = async (req, res) => {
             break;
         }
       }
-        
+
       //  TLS part 
       if (proxy.tls === true || proxy["disable-sni"] === false) {
         result = `${result}, tls=true, sni=(${proxy.servername}||${proxy.sni}||${proxy.server})`;
         if (proxy["skip-cert-verify"]) {
           result = `${result}, skip-cert-verify=${proxy["skip-cert-verify"]}`;
         }
-        if (proxy.fingerprint){
+        if (proxy.fingerprint) {
           fingerprintSha256 = crypto.createHash("sha256").update(proxy.fingerprint).digest("hex");
           result = `${result}, server-cert-fingerprint-sha256=${fingerprintSha256}`;
         }
         if (proxy["alpn"]) {
           // convert alpn from array to string like: h3;h2;http/1.1
           if (Array.isArray(proxy["alpn"])) {
-              result = `${result}, alpn=${proxy["alpn"].join(";")}`;
-            } else {
-              result = `${result}, alpn=${proxy["alpn"]}`;
-            }
+            result = `${result}, alpn=${proxy["alpn"].join(";")}`;
+          } else {
+            result = `${result}, alpn=${proxy["alpn"]}`;
           }
-        
+        }
+
       }
-      
+
       //  WS part
       if (proxy.network === "ws") {
         result = `${result}, ws=true`;
@@ -296,11 +300,9 @@ module.exports = async (req, res) => {
     const proxies = surgeProxies.filter((p) => p !== undefined);
     // Add a dummy item at the beginning showing the subscription info if available
     if (subscriptionUserInfo && needSubInfo) {
-      if (subscriptionUserExpires !== "Never") {
-        const dummyItemExpiryDate = `过期日\：${subscriptionUserExpires} = http, 127.0.0.1, 11441`;
-        proxies.unshift(dummyItemExpiryDate);
-      }
-      const dummyItemRemaining = `剩余流量\：${subscriptionUserRemaining} = http, 127.0.0.1,11441`;
+      const dummyItemExpiryDate = `Expires\：${subscriptionUserExpires} = http, 127.0.0.1, 65535`;
+      proxies.unshift(dummyItemExpiryDate);
+      const dummyItemRemaining = `Traffic\：${subscriptionUserUsed}\|${subscriptionUserRemaining} = http, 127.0.0.1,65535`;
       proxies.unshift(dummyItemRemaining);
     }
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
