@@ -3,11 +3,9 @@ import { useState, useEffect } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { SelectorIcon, DuplicateIcon } from "@heroicons/react/outline";
 import toast, { Toaster } from "react-hot-toast";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
-// let host = "";
-// if (typeof window !== "undefined") {
-//   host = window.location.origin;
-// }
 
 let surgeManualURL =
   "https://manual.nssurge.com/policy-group/policy-including.html";
@@ -245,6 +243,8 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
       </footer>
 
       <Toaster />
+      <Analytics />
+      <SpeedInsights />
     </div>
   );
 }
