@@ -1,8 +1,8 @@
-const YAML = require("yaml");
-const axios = require("axios");
-const crypto = require("crypto");
+import YAML from "yaml";
+import axios from "axios";
+import crypto from "crypto";
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   const url = req.query.url;
   const target = req.query.target;
   console.log(`query: ${JSON.stringify(req.query)}`);
