@@ -16,7 +16,11 @@
 /build
 
 # misc
+## Apple Shit
 .DS_Store
+._.DS_Store
+**/.DS_Store
+**/._.DS_Store
 *.pem
 
 # debug
@@ -32,3 +36,9 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# NodeJS package
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+pnpm-workspace.yaml

@@ -1,13 +1,13 @@
 import Head from "next/head";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { SelectorIcon, DuplicateIcon } from "@heroicons/react/outline";
 import toast, { Toaster } from "react-hot-toast";
 
-let host = "";
-if (typeof window !== "undefined") {
-  host = window.location.origin;
-}
+// let host = "";
+// if (typeof window !== "undefined") {
+//   host = window.location.origin;
+// }
 
 let surgeManualURL =
   "https://manual.nssurge.com/policy-group/policy-including.html";
@@ -17,6 +17,14 @@ let clashManualURL =
 export default function Home() {
   const [url, setUrl] = useState("");
   const [target, setTarget] = useState("clash");
+  const [host, setHost] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setHost(window.location.origin);
+    }
+  }
+    , []); // Use empty array to ensure only run once 
 
   const convertedUrl = `${host}/api/convert?url=${encodeURIComponent(
     url
@@ -182,7 +190,7 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
           <ul className="mt-1">
             <li>
               1. 点击下面的按钮
-              <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fous50%2Fproxy-provider-converter"><img src="https://vercel.com/button" alt="Deploy with Vercel"/></a>
+              <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fous50%2Fproxy-provider-converter"><img src="https://vercel.com/button" alt="Deploy with Vercel" /></a>
             </li>
             <li>2. 使用 GitHub 登录</li>
             <li>3. 跟着提示完成部署</li>

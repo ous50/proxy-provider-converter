@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "analyze": "ANALYZE=true npm run build"
@@ -10,12 +10,14 @@
     "@heroicons/react": "^1.0.2",
     "@next/bundle-analyzer": "^11.0.1",
     "@splitbee/web": "^0.2.4",
-    "axios": "^0.21.1",
-    "next": "^12.0.7",
+    "@vercel/analytics": "^1.5.0",
+    "@vercel/speed-insights": "^1.2.0",
+    "axios": "^1.8.4",
+    "next": "^15.2.4",
     "preact": "^10.5.14",
-    "react": "^17.0.2",
+    "react": "^18.3.1",
     "react-copy-to-clipboard": "^5.0.3",
-    "react-dom": "^17.0.2",
+    "react-dom": "^18.3.1",
     "react-hot-toast": "^2.0.0",
     "yaml": "^1.10.2"
   },

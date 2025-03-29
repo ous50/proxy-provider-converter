@@ -1,13 +1,16 @@
 import "tailwindcss/tailwind.css";
 import "../styles/global.css";
-import splitbee from "@splitbee/web";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 function MyApp({ Component, pageProps }) {
-  splitbee.init({
-    // scriptUrl: "/bee.js",
-    // apiUrl: "/_hive",
-  });
-  return <Component {...pageProps} />;
+  return (
+    <>
+      <Component {...pageProps} />
+      <Analytics />
+      <SpeedInsights />
+    </>
+  );
 }
 
 export default MyApp;
