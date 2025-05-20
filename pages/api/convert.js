@@ -5,6 +5,9 @@ import crypto from "crypto";
 export default async function handler(req, res) {
   const url = req.query.url;
   const target = req.query.target;
+  // const removeSubInfo = req.query.removeSubInfo;
+  const removeSubInfo = !req.query.displaySubInfo ? false : !req.query.displaySubInfo;
+  const displaySubInfo = req.query.displaySubInfo;
   console.log(`query: ${JSON.stringify(req.query)}`);
   if (url === undefined) {
     res.status(400).send("Missing parameter: url");
@@ -100,7 +103,8 @@ export default async function handler(req, res) {
 
   console.log(`Parsing YAML`);
   let config = null;
-  let needSubInfo = true;
+  // let removeSubInfo = false;
+  // let displaySubInfo = false;
   try {
     config = YAML.parse(configFile);
     console.log(`👌 Parsed YAML`);
@@ -120,13 +124,17 @@ export default async function handler(req, res) {
     );
     const surgeProxies = supportedProxies.map((proxy) => {
       // Regex to detect subscription info in proxy name
-      const trafficRegex = /(?:剩余|剩餘|剩下|余额|余額|流量|套餐|重置|到期|过期|有效|剩余时间|重置时间|剩余流量|剩餘流量|可用|remaining|left|data|transfer|quota)/i;
-      const expiryRegex = /(?:过期|到期|有效期)/i;
+      // const trafficRegex = /(?:剩余|剩餘|剩下|余额|余額|流量|套餐|重置|到期|过期|有效|剩余时间|重置时间|剩余流量|剩餘流量|可用|remaining|left|data|transfer|quota)/i;
+      // const expiryRegex = /(?:过期|到期|有效期)/i;
 
-      if (trafficRegex.test(proxy.name) || trafficRegex.test(proxy.name)) {
-        needSubInfo = false;
-        console.log(`Subscription info detected, disabling SubInfo display`);
-      }
+      // if (trafficRegex.test(proxy.name) || trafficRegex.test(proxy.name)) {
+      //   removeSubInfo = true;
+      //   console.log(`Subscription info detected, removing from list.`);
+      //   if (addSubInfo == true) {
+      //     displaySubInfo = true;
+      //     console.log(`Subscription info detected, adding to list.`);
+      //   }
+      // }
 
       const common = `${proxy.name} = ${proxy.type}, ${proxy.server}, ${proxy.port}`;
       let result = `${common}`;
@@ -299,15 +307,23 @@ export default async function handler(req, res) {
     });
     const proxies = surgeProxies.filter((p) => p !== undefined);
     // Add a dummy item at the beginning showing the subscription info if available
-    if (subscriptionUserInfo && needSubInfo) {
+    if (subscriptionUserInfo && displaySubInfo) {
       const dummyItemExpiryDate = `Expires\：${subscriptionUserExpires} = http, 127.0.0.1, 65535`;
       proxies.unshift(dummyItemExpiryDate);
       const dummyItemRemaining = `Traffic\：${subscriptionUserUsed}\|${subscriptionUserRemaining} = http, 127.0.0.1,65535`;
       proxies.unshift(dummyItemRemaining);
     }
+    // Remove subscription info from the list if detected
+    if (subscriptionUserInfo && removeSubInfo) {
+      proxies.shift();
+      proxies.shift();
+    }
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('subscription-userinfo', `${subscriptionUserInfo}`);
-    res.status(200).send(proxies.join("\n"));
+    res.status(200).send(
+      `# Subscription URL: ${url}\n` +
+      proxies.join("\n")
+    );
   } else {
     const response = YAML.stringify({ proxies: config.proxies });
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');

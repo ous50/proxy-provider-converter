@@ -15,6 +15,8 @@ let clashManualURL =
 export default function Home() {
   const [url, setUrl] = useState("");
   const [target, setTarget] = useState("clash");
+  const [displaySubInfo, setDisplaySubInfo] = useState(false);
+  const [removeSubInfo, setRemoveSubInfo] = useState(false);
   const [host, setHost] = useState("");
 
   useEffect(() => {
@@ -26,7 +28,7 @@ export default function Home() {
 
   const convertedUrl = `${host}/api/convert?url=${encodeURIComponent(
     url
-  )}&target=${target}`;
+  )}&target=${target}&displaySubInfo=${displaySubInfo}&removeSubInfo=${removeSubInfo}`;
 
   let urlHost = "";
   try {
@@ -129,8 +131,28 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
               </select>
               <SelectorIcon className="absolute h-6 top-3.5 right-3 text-gray-400" />
             </div>
+            <p></p>
           </div>
         </div>
+
+        {/* show the two checkbox only when target is surge */}
+
+        {target === "surge" && (
+          <div className="ml-2 text-sm text-lg bg-white rounded-lg shadow-sm appearance-none focus:outline-none text-gray-600">
+            <input
+              classname="w-full md:w-max py-3 pl-4 pr-10 text-lg bg-white rounded-lg shadow-sm appearance-none focus:outline-none"
+              type="checkbox"
+              id="displaySubInfo"
+              checked={displaySubInfo}
+              onChange={(e) => setDisplaySubInfo(e.target.checked)}
+            />
+            <label htmlFor="displaySubInfo" className="ml-2 text-sm text-gray-600">
+              在列表中加入订阅信息
+            </label>
+          </div>
+        )}
+
+
         {url && (
           <div className="break-all p-3 mt-4 rounded-lg text-gray-100 bg-gray-900 shadow-sm w-full">
             {convertedUrl}
