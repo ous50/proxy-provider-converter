@@ -6,6 +6,8 @@ export default async function handler(req, res) {
   const url = req.query.url;
   const target = req.query.target;
   // const removeSubInfo = req.query.removeSubInfo;
+  const subName = req.query.subName;
+  const subNameValue = req.query.subNameValue;
   const removeSubInfo = !req.query.displaySubInfo ? false : !req.query.displaySubInfo;
   const displaySubInfo = req.query.displaySubInfo;
   console.log(`query: ${JSON.stringify(req.query)}`);
@@ -135,8 +137,15 @@ export default async function handler(req, res) {
       //     console.log(`Subscription info detected, adding to list.`);
       //   }
       // }
-
-      const common = `${proxy.name} = ${proxy.type}, ${proxy.server}, ${proxy.port}`;
+      let common = ``;
+      if (subName && subNameValue) {
+        console.log(`Subscription name detected, Adding to list.`);
+        common = `${proxy.name} - ${subNameValue} = ${proxy.type}, ${proxy.server}, ${proxy.port}`;
+      } else {
+        console.log(`Subscription name not detected, Adding to list.`);
+        common = `${proxy.name} = ${proxy.type}, ${proxy.server}, ${proxy.port}`;
+      }
+      // const common = `${proxy.name} = ${proxy.type}, ${proxy.server}, ${proxy.port}`;
       let result = `${common}`;
       if (!proxy.network) proxy.network = "tcp";
       if (proxy.network !== "ws" && proxy.network !== "tcp" && proxy.network !== "http") {
