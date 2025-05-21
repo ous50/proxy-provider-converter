@@ -2,7 +2,7 @@
 
 一个可以将 Clash 订阅转换成 Proxy Provider 和 External Group(Surge) 的工具
 
-[https://proxy-provider-converter.vercel.app](https://proxy-provider-converter.vercel.app)
+DEMO: [https://ppc.ous50.moe](https://ppc.ous50.moe)
 
 ### 什么是 Proxy Provider 和 External Group？
 
@@ -22,3 +22,8 @@
 
 - [Metacubex(clash) Wiki 中的 Proxy Providers 章节](https://wiki.metacubex.one/config/proxy-providers/)
 - [Surge Policy Group 文档](https://manual.nssurge.com/policy-group/policy-including.html)
+
+## TODO 
+
+- [ ] 用 Surge 面板显示订阅信息
+- [ ] 支持 Loon
