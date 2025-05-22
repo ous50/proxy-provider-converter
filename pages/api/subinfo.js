@@ -1,9 +1,7 @@
-import YAML from "yaml";
 import axios from "axios";
-import crypto from "crypto";
 
 export default async function handler(req, res) {
-  const url = req.query.url;
+  const { url, format, lang } = req.query;
   const subName = req.query.subName ? req.query.subName : url.split("/")[2].split(".")[0];
   console.log(`query: ${JSON.stringify(req.query)}`);
   if (url === undefined) {
@@ -11,16 +9,44 @@ export default async function handler(req, res) {
     return;
   }
 
+  if (format == ".sgmodule") {
+    // Determine subName: use query param, or extract from urlQueryParam, or from requestPath
+    // Constructing the absolute script-path:
+    const protocol = req.headers['x-forwarded-proto'] || (process.env.NODE_ENV === 'development' ? 'http' : 'https');
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+
+    // The script-path should be the URL that was requested, but without the .sgmodule suffix.
+    // If request was https://domain.com/api/subinfo.sgmodule?url=http://example.com/sub
+    // scriptPath should be https://domain.com/api/subinfo?url=http://example.com/sub (preserving query params if needed by the script itself)
+    // Or, if the script is *always* just the base path without .sgmodule and without original query params:
+    const scriptPathBase = req.url.replace(/\&format\S*/, ""); // e.g., /api/subinfo
+    let scriptPath = `${protocol}://${host}${scriptPathBase}`; // Assuming you want to keep the original URL query parameter
+    if (subName) {
+      scriptPath += `&subName=${subName}`;
+    }
+
+    const title = subName || url || `${protocol}://${host}${req.url}`; // Use original URL query for title if present
+
+    const sgmoduleStr = `#!name=${title} 订阅信息
+#!desc=获取${title}剩余流量信息以及套餐到期日期
+#!category=Subscription Info
+#!author=ous50
+#!icon=externaldrive.fill.badge.icloud=#007aff
+#!script-update-interval=43200
+
+[Panel]
+${subName}-Panel = script-name=${subName}-Script, title="${title} 订阅信息", update-interval=43200
+
+[Script]
+${subName}-Script = type=generic,timeout=10,script-path=https://raw.githubusercontent.com/getsomecat/GetSomeCats/Surge/modules/Panel/Sub-info/Moore/Sub-info.js,script-update-interval=0,argument=url=${req.query.url}&reset_day=1&title=${title}&icon=externaldrive.fill.badge.icloud=#007aff
+`;
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.status(200).send(sgmoduleStr);
+    return;
+  }
   console.log(`Fetching url: ${url}`);
-  let configFile = null;
-  let subscriptionUserInfo = null;
-  let subscriptionUserUpload = null;
-  let subscriptionUserDownload = null;
-  let subscriptionUserTotal = null;
-  let subscriptionUserRemaining = null;
-  let subscriptionUserExpires = null;
-  let subscriptionUserUsed = null;
-  let userSubscriptionInfoStr = null;
+  let subscriptionUserInfo;
+  let userSubscriptionInfoStr;
   try {
     const result = await axios({
       url,
@@ -29,7 +55,6 @@ export default async function handler(req, res) {
           "clash.meta",
       },
     });
-    configFile = result.data;
     function formatBytes(bytes, decimals = 2) {
       if (bytes === 0) return '0 Bytes';
 
@@ -62,6 +87,8 @@ export default async function handler(req, res) {
         }
       });
 
+      console.log(`Parsed subscription info: ${JSON.stringify(parsedInfo)}`);
+
       // 提取数值
       const upload = parseInt(parsedInfo.upload || 0);
       const download = parseInt(parsedInfo.download || 0);
@@ -69,19 +96,13 @@ export default async function handler(req, res) {
       const used = upload + download;
       const remaining = total - upload - download;
       const expires = parsedInfo.expire ? formatTimestamp(parsedInfo.expire) : "Never";
-      subscriptionUserExpires = expires;
 
       // 格式化显示
       const usedStr = formatBytes(used);
-      subscriptionUserUsed = usedStr;
       const uploadStr = formatBytes(upload);
-      subscriptionUserUpload = uploadStr;
       const downloadStr = formatBytes(download);
-      subscriptionUserDownload = downloadStr;
       const totalStr = formatBytes(total);
-      subscriptionUserTotal = totalStr;
       const remainingStr = formatBytes(remaining > 0 ? remaining : 0);
-      subscriptionUserRemaining = remainingStr;
 
       console.log(`User Subscription Info: ${subscriptionUserInfo}`);
 

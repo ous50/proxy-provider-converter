@@ -1,12 +1,14 @@
 # Proxy Provider Converter
 
-一个可以将 Clash 订阅转换成 Proxy Provider 和 External Group(Surge) 的工具
+一个可以将 Clash 订阅转换成 Proxy Provider (Clash) 和 External Group(Surge) 的工具，同时支持为 Surge 生成显示订阅信息的面板模块 (.sgmodule) 及配置片段。
 
 DEMO: [https://ppc.ous50.moe](https://ppc.ous50.moe)
 
+更新日志: [UPDATE.md](./UPDATE.md)
+
 ### 什么是 Proxy Provider 和 External Group？
 
-[Proxy Provider](https://github.com/Dreamacro/clash/wiki/configuration#proxy-providers) 是 Clash 的一项功能，可以让用户从指定路径动态加载代理服务器列表。使用这个功能你可以将 Clash 订阅里面的代理服务器提取出来，放到你喜欢的配置文件里，也可以将多个 Clash 订阅里的代理服务器混合到一个配置文件里。External Group 则是 Proxy Provider 在 Surge 里的叫法，作用是一样的。
+[Proxy Provider](https://github.com/Dreamacro/clash/wiki/configuration#proxy-providers) 是 Clash 的一项功能，可以让用户从指定路径动态加载代理服务器列表。使用这个功能你可以将 Clash 订阅里面的代理服务器提取出来，放到你喜欢的配置文件里，也可以将多个 Clash 订阅里的代理服务器混合到一个配置文件里。External Group 则是 Proxy Provider 在 Surge 里的叫法，作用是一样的。**此外，您还可以使用此工具为 Surge 生成一个面板模块（`.sgmodule` 文件）或配置片段，用于显示所选订阅的流量使用情况和到期时间。**
 
 ### 怎么自己部署转换工具？
 
@@ -22,8 +24,9 @@ DEMO: [https://ppc.ous50.moe](https://ppc.ous50.moe)
 
 - [Metacubex(clash) Wiki 中的 Proxy Providers 章节](https://wiki.metacubex.one/config/proxy-providers/)
 - [Surge Policy Group 文档](https://manual.nssurge.com/policy-group/policy-including.html)
+- **[Surge Panel 文档](https://manual.nssurge.com/extend/panel.html)**
 
 ## TODO 
 
-- [ ] 用 Surge 面板显示订阅信息
+- [x] 用 Surge 面板显示订阅信息
 - [ ] 支持 Loon

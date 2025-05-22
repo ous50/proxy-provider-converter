@@ -73,6 +73,8 @@ export default function Home() {
     return `${host}/api/subinfo?${params.toString()}`;
   }, [host, url, subName]);
 
+  const subInfoSgModuleUrl = subInfoUrl + "&format=.sgmodule";
+
   const urlHost = useMemo(() => {
     if (!url.trim()) return ""; // 如果 url 为空或只有空格，返回空
     try {
@@ -89,8 +91,7 @@ export default function Home() {
 
   const clashConfigProxyGroup = useMemo(() => {
     if (!url.trim() || !convertedUrl) return "";
-    return `proxy-groups:
-  - name: UseProvider
+    return `  - name: UseProvider
     type: select
     use:
       - ${urlHost || "provider1"} 
@@ -104,8 +105,7 @@ export default function Home() {
 
   const clashConfigProxyProvider = useMemo(() => {
     if (!url.trim() || !convertedUrl) return "";
-    return `proxy-providers:
-  ${urlHost || "provider1"}: 
+    return `  ${urlHost || "provider1"}: 
     type: http
     url: ${convertedUrl} 
     interval: 3600
@@ -118,14 +118,26 @@ export default function Home() {
 `;
   }, [url, convertedUrl, urlHost]);
 
-  const clashConfig = clashConfigProxyGroup + clashConfigProxyProvider;
+  const clashConfig = "proxy-groups:\n" + clashConfigProxyGroup + "proxy-providers:\n" + clashConfigProxyProvider;
 
   const surgeConfig = useMemo(() => {
     if (!url.trim() || !convertedUrl) return "";
     return `[Proxy Group]
-${urlHost || "egroup"} = select, policy-path=${convertedUrl}
+${subName || urlHost} = select, policy-path=${convertedUrl}
 `;
   }, [url, convertedUrl, urlHost]);
+
+  const surgeSubInfoPanelPanel = useMemo(() => {
+    if (!url.trim() || !subInfoUrl) return "";
+    return `${subName || urlHost}-SubInfo = script-name=${subName || urlHost}-SubInfo, title="${urlHost} 订阅信息", update-interval=43200`
+  }, [url, subInfoUrl, urlHost, subName]);
+
+  const surgeSubInfoPanelScript = useMemo(() => {
+    if (!url.trim() || !subInfoUrl) return "";
+    return `${subName || urlHost}-SubInfo = type=generic, timeout=15, script-path=https://raw.githubusercontent.com/getsomecat/GetSomeCats/Surge/modules/Panel/Sub-info/Moore/Sub-info.js,script-update-interval=0,argument=url=${url}&reset_day=1&title=${subName || urlHost}&icon=externaldrive.fill.badge.icloud=#007aff
+`}, [url, subInfoUrl, urlHost, subName]);
+
+  const surgeSubInfoPanel = `[Panel]\n` + surgeSubInfoPanelPanel + `\n\n` + `[Script]\n` + surgeSubInfoPanelScript
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
@@ -277,7 +289,7 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
         )}
 
         {/* 显示订阅信息 (条件渲染：确保 url 和 subInfoUrl 都有效) */}
-        {url.trim() && subInfoUrl && (
+        {url.trim() && subInfoUrl && target == "surge" && (
           <div className="break-all p-3 mt-4 rounded-lg text-gray-100 bg-gray-900 shadow-sm w-full">
             <span className="text-sm text-gray-400">订阅信息：</span>
             {subInfoUrl}
@@ -287,9 +299,17 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
                 点击复制
               </div>
             </CopyToClipboard>
+            <span className="text-sm text-gray-400">订阅信息面板链接：</span>
+            {subInfoSgModuleUrl}
+            <CopyToClipboard text={subInfoSgModuleUrl} onCopy={() => copiedToast()}>
+              <div className="flex items-center text-sm mt-4 text-gray-400 cursor-pointer hover:text-gray-300 transition duration-200 select-none">
+                <DuplicateIcon className="h-5 w-5 mr-1 inline-block" />
+                点击复制
+              </div>
+            </CopyToClipboard>
           </div>
         )}
-        {/* 显示配置示例标题 (条件渲染：确保 url 有效) */}
+        {/* 显示配置示例 (条件渲染：确保 url 有效) */}
         {url.trim() && url && (
           <div className="w-full text-gray-900 mt-14">
             <h3 className="text-lg md:text-xl font-bold mt-8">
@@ -334,7 +354,7 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
               >
                 <div className="flex items-center text-sm mt-4 text-gray-400 cursor-pointer hover:text-gray-300 transition duration-200 select-none">
                   <DuplicateIcon className="h-5 w-5 mr-1 inline-block" />
-                  点击复制 Clash Proxy Group
+                  点击复制 Clash Proxy Group 的内容
                 </div>
 
               </CopyToClipboard><CopyToClipboard
@@ -343,12 +363,53 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
               >
                   <div className="flex items-center text-sm mt-4 text-gray-400 cursor-pointer hover:text-gray-300 transition duration-200 select-none">
                     <DuplicateIcon className="h-5 w-5 mr-1 inline-block" />
-                    点击复制 Clash Proxy Provider
+                    点击复制 Clash Proxy Provider 的内容
                   </div>
 
                 </CopyToClipboard></>
             )}
 
+          </div>
+        )}
+
+        {/* 显示 Surge 面板配置示例 (条件渲染：确保 url 和 surgeSubInfoPanel 都有效，且 target 为 surge) */}
+        {url.trim() && url && target === "surge" && (
+          <div className="w-full text-gray-900 mt-14">
+            <h3 className="text-lg md:text-xl font-bold mt-8">
+              {"Surge 面板配置示例"}
+            </h3>
+            <p className="mt-2">
+              {"将下面的配置复制到 Surge 的配置文件中，替换掉原有的 Panel 及 Script 部分。"}
+            </p>
+            <p className="mt-2">
+              {"如果你在使用 Surge 的话，建议使用 Surge 的配置文件格式。"}
+            </p>
+          </div>
+        )}
+
+        {/* 显示 Surge SubInfo Panel (条件渲染：确保 url 和 surgeSubInfoPanel 都有效，且 target 为 surge) */}
+        {url.trim() && surgeSubInfoPanel && target === "surge" && (
+          <div className="break-all p-3 mt-4 rounded-lg text-gray-100 bg-gray-900 shadow-sm w-full">
+            <span className="text-sm text-gray-400">Surge SubInfo Panel：</span>
+            <pre className="whitespace-pre-wrap">{surgeSubInfoPanel}</pre>
+            <CopyToClipboard text={surgeSubInfoPanel} onCopy={() => copiedToast()}>
+              <div className="flex items-center text-sm mt-4 text-gray-400 cursor-pointer hover:text-gray-300 transition duration-200 select-none">
+                <DuplicateIcon className="h-5 w-5 mr-1 inline-block" />
+                点击复制
+              </div>
+            </CopyToClipboard>
+            <CopyToClipboard text={surgeSubInfoPanelPanel} onCopy={() => copiedToast()}>
+              <div className="flex items-center text-sm mt-4 text-gray-400 cursor-pointer hover:text-gray-300 transition duration-200 select-none">
+                <DuplicateIcon className="h-5 w-5 mr-1 inline-block" />
+                点击复制 Panel 的内容
+              </div>
+            </CopyToClipboard>
+            <CopyToClipboard text={surgeSubInfoPanelScript} onCopy={() => copiedToast()}>
+              <div className="flex items-center text-sm mt-4 text-gray-400 cursor-pointer hover:text-gray-300 transition duration-200 select-none">
+                <DuplicateIcon className="h-5 w-5 mr-1 inline-block" />
+                点击复制 Script 的内容
+              </div>
+            </CopyToClipboard>
           </div>
         )}
 
