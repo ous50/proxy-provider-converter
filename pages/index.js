@@ -35,8 +35,6 @@ export default function Home() {
 
     const params = new URLSearchParams();
     params.append("url", url);
-    params.append("target", target);
-
 
     if (target === "surge") {
       if (displaySubInfo) {
@@ -53,8 +51,10 @@ export default function Home() {
       }
     }
 
+    params.append("target", target);
+
     return `${host}/api/convert?${params.toString()}`;
-  }, [host, url, target, displaySubInfo, removeSubInfo, subName]);
+  }, [host, url, displaySubInfo, removeSubInfo, subName, target]);
 
   const subInfoUrl = useMemo(() => {
     if (!host || !url.trim()) {
@@ -87,11 +87,9 @@ export default function Home() {
       position: "bottom-center",
     });
 
-  const clashConfig = useMemo(() => {
+  const clashConfigProxyGroup = useMemo(() => {
     if (!url.trim() || !convertedUrl) return "";
-    return `# Clash 配置格式
-
-proxy-groups:
+    return `proxy-groups:
   - name: UseProvider
     type: select
     use:
@@ -100,7 +98,13 @@ proxy-groups:
       - Proxy
       - DIRECT
 
-proxy-providers:
+
+`;
+  }, [url, convertedUrl, urlHost]);
+
+  const clashConfigProxyProvider = useMemo(() => {
+    if (!url.trim() || !convertedUrl) return "";
+    return `proxy-providers:
   ${urlHost || "provider1"}: 
     type: http
     url: ${convertedUrl} 
@@ -114,11 +118,11 @@ proxy-providers:
 `;
   }, [url, convertedUrl, urlHost]);
 
+  const clashConfig = clashConfigProxyGroup + clashConfigProxyProvider;
+
   const surgeConfig = useMemo(() => {
     if (!url.trim() || !convertedUrl) return "";
-    return `# Surge 配置格式
-
-[Proxy Group]
+    return `[Proxy Group]
 ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
 `;
   }, [url, convertedUrl, urlHost]);
@@ -285,39 +289,66 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
             </CopyToClipboard>
           </div>
         )}
-        {/* 显示配置示例标题 */}
-        <h3 className="text-lg md:text-xl font-bold mt-8">
-          {target === "surge" ? "Surge 配置示例" : "Clash 配置示例"}
-        </h3>
-        <p className="mt-2">
-          {target === "surge"
-            ? "将下面的配置复制到 Surge 的配置文件中，替换掉原有的 Proxy Group 部分。"
-            : "将下面的配置复制到 Clash 的配置文件中，替换掉原有的 Proxy Group 部分。"}
-        </p>
-        <p className="mt-2">
-          {target === "surge"
-            ? "如果你在使用 Surge 的话，建议使用 Surge 的配置文件格式。"
-            : "如果你在使用 Clash 的话，建议使用 Clash 的配置文件格式。"}
-        </p>
+        {/* 显示配置示例标题 (条件渲染：确保 url 有效) */}
+        {url.trim() && url && (
+          <div className="w-full text-gray-900 mt-14">
+            <h3 className="text-lg md:text-xl font-bold mt-8">
+              {target === "surge" ? "Surge 配置示例" : "Clash 配置示例"}
+            </h3>
+            <p className="mt-2">
+              {target === "surge"
+                ? "将下面的配置复制到 Surge 的配置文件中，替换掉原有的 Proxy Group 部分。"
+                : "将下面的配置复制到 Clash 的配置文件中，替换掉原有的 Proxy Group 部分。"}
+            </p>
+            <p className="mt-2">
+              {target === "surge"
+                ? "如果你在使用 Surge 的话，建议使用 Surge 的配置文件格式。"
+                : "如果你在使用 Clash 的话，建议使用 Clash 的配置文件格式。"}
+            </p>
+          </div>
+        )}
 
         {/* 显示配置示例 (条件渲染：确保 url 和 convertedUrl 都有效) */}
         {url.trim() && convertedUrl && (
           <div className="w-full p-4 mt-4 text-gray-100 bg-gray-900 rounded-lg hidden md:block">
-            {target !== "surge" && clashConfig && (
+            {target == "clash" && clashConfig && (
               <pre className="whitespace-pre-wrap">{clashConfig}</pre>
             )}
             {target === "surge" && surgeConfig && (
               <pre className="whitespace-pre-wrap">{surgeConfig}</pre>
             )}
             <CopyToClipboard
-              text={target === "surge" ? surgeConfig : clashConfig}
+              text={target === "surge" ? surgeConfig : target === "clash" ? clashConfig : ""}
               onCopy={() => copiedToast()}
             >
               <div className="flex items-center text-sm mt-4 text-gray-400 cursor-pointer hover:text-gray-300 transition duration-200 select-none">
                 <DuplicateIcon className="h-5 w-5 mr-1 inline-block" />
                 点击复制
               </div>
+
             </CopyToClipboard>
+            {target === "clash" && (
+              <><CopyToClipboard
+                text={target === "surge" ? surgeConfig : clashConfigProxyProvider}
+                onCopy={() => copiedToast()}
+              >
+                <div className="flex items-center text-sm mt-4 text-gray-400 cursor-pointer hover:text-gray-300 transition duration-200 select-none">
+                  <DuplicateIcon className="h-5 w-5 mr-1 inline-block" />
+                  点击复制 Clash Proxy Group
+                </div>
+
+              </CopyToClipboard><CopyToClipboard
+                text={target === "surge" ? surgeConfig : clashConfigProxyProvider}
+                onCopy={() => copiedToast()}
+              >
+                  <div className="flex items-center text-sm mt-4 text-gray-400 cursor-pointer hover:text-gray-300 transition duration-200 select-none">
+                    <DuplicateIcon className="h-5 w-5 mr-1 inline-block" />
+                    点击复制 Clash Proxy Provider
+                  </div>
+
+                </CopyToClipboard></>
+            )}
+
           </div>
         )}
 
