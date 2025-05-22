@@ -17,8 +17,8 @@ export default function Home() {
   const [target, setTarget] = useState("clash");
   const [displaySubInfo, setDisplaySubInfo] = useState(false);
   const [removeSubInfo, setRemoveSubInfo] = useState(false);
-  const [subName, setSubName] = useState(false);
-  const [subNameValue, setSubNameValue] = useState("");
+  const [enableSubName, setenableSubName] = useState(false);
+  const [subName, setsubName] = useState("");
   const [host, setHost] = useState("");
 
   useEffect(() => {
@@ -47,15 +47,31 @@ export default function Home() {
       }
     }
 
-    if (subName) {
-      params.append("subName", "true");
-      if (subNameValue.trim()) {
-        params.append("subNameValue", subNameValue);
+    if (enableSubName) {
+      if (subName.trim()) {
+        params.append("subName", subName);
       }
     }
 
     return `${host}/api/convert?${params.toString()}`;
-  }, [host, url, target, displaySubInfo, removeSubInfo, subName, subNameValue]);
+  }, [host, url, target, displaySubInfo, removeSubInfo, subName]);
+
+  const subInfoUrl = useMemo(() => {
+    if (!host || !url.trim()) {
+      return "";
+    }
+
+    const params = new URLSearchParams();
+    params.append("url", url);
+
+    if (enableSubName) {
+      if (subName.trim()) {
+        params.append("subName", subName);
+      }
+    }
+
+    return `${host}/api/subinfo?${params.toString()}`;
+  }, [host, url, subName]);
 
   const urlHost = useMemo(() => {
     if (!url.trim()) return ""; // 如果 url 为空或只有空格，返回空
@@ -173,24 +189,24 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
           <div className="flex items-center w-full gap-2 mt-4">
             <input
               type="checkbox"
-              id="subName"
+              id="enableSubName"
               className="h-5 w-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500" // 统一美化一下checkbox
-              checked={subName}
-              onChange={(e) => setSubName(e.target.checked)}
+              checked={enableSubName}
+              onChange={(e) => setenableSubName(e.target.checked)}
             />
-            <label htmlFor="subName" className="text-sm text-gray-700 select-none">
+            <label htmlFor="enableSubName" className="text-sm text-gray-700 select-none">
               启用订阅名称后缀
             </label>
           </div>
 
           {/* 订阅名称后缀输入框 (条件渲染) */}
-          {subName && (
+          {enableSubName && (
             <div className="w-full mt-4">
               <input
                 className="w-full p-4 text-lg bg-white rounded-lg shadow-sm focus:outline-none"
                 placeholder="请输入订阅名称后缀 (例如：clash 或 xxcloud)"
-                value={subNameValue}
-                onChange={(e) => setSubNameValue(e.target.value)}
+                value={subName}
+                onChange={(e) => setsubName(e.target.value)}
               />
             </div>
           )}
@@ -245,6 +261,7 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
         {/* 显示转换后的 URL (条件渲染：确保 url 和 convertedUrl 都有效) */}
         {url.trim() && convertedUrl && (
           <div className="break-all p-3 mt-4 rounded-lg text-gray-100 bg-gray-900 shadow-sm w-full">
+            <span className="text-sm text-gray-400">转换后的链接：</span>
             {convertedUrl}
             <CopyToClipboard text={convertedUrl} onCopy={() => copiedToast()}>
               <div className="flex items-center text-sm mt-4 text-gray-400  cursor-pointer  hover:text-gray-300 transition duration-200 select-none">
@@ -255,13 +272,41 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
           </div>
         )}
 
+        {/* 显示订阅信息 (条件渲染：确保 url 和 subInfoUrl 都有效) */}
+        {url.trim() && subInfoUrl && (
+          <div className="break-all p-3 mt-4 rounded-lg text-gray-100 bg-gray-900 shadow-sm w-full">
+            <span className="text-sm text-gray-400">订阅信息：</span>
+            {subInfoUrl}
+            <CopyToClipboard text={subInfoUrl} onCopy={() => copiedToast()}>
+              <div className="flex items-center text-sm mt-4 text-gray-400 cursor-pointer hover:text-gray-300 transition duration-200 select-none">
+                <DuplicateIcon className="h-5 w-5 mr-1 inline-block" />
+                点击复制
+              </div>
+            </CopyToClipboard>
+          </div>
+        )}
+        {/* 显示配置示例标题 */}
+        <h3 className="text-lg md:text-xl font-bold mt-8">
+          {target === "surge" ? "Surge 配置示例" : "Clash 配置示例"}
+        </h3>
+        <p className="mt-2">
+          {target === "surge"
+            ? "将下面的配置复制到 Surge 的配置文件中，替换掉原有的 Proxy Group 部分。"
+            : "将下面的配置复制到 Clash 的配置文件中，替换掉原有的 Proxy Group 部分。"}
+        </p>
+        <p className="mt-2">
+          {target === "surge"
+            ? "如果你在使用 Surge 的话，建议使用 Surge 的配置文件格式。"
+            : "如果你在使用 Clash 的话，建议使用 Clash 的配置文件格式。"}
+        </p>
+
         {/* 显示配置示例 (条件渲染：确保 url 和 convertedUrl 都有效) */}
         {url.trim() && convertedUrl && (
           <div className="w-full p-4 mt-4 text-gray-100 bg-gray-900 rounded-lg hidden md:block">
-            {target !== "surge" && clashConfig && ( // 也判断一下 clashConfig 是否有值
+            {target !== "surge" && clashConfig && (
               <pre className="whitespace-pre-wrap">{clashConfig}</pre>
             )}
-            {target === "surge" && surgeConfig && ( // 也判断一下 surgeConfig 是否有值
+            {target === "surge" && surgeConfig && (
               <pre className="whitespace-pre-wrap">{surgeConfig}</pre>
             )}
             <CopyToClipboard

@@ -5,9 +5,7 @@ import crypto from "crypto";
 export default async function handler(req, res) {
   const url = req.query.url;
   const target = req.query.target;
-  // const removeSubInfo = req.query.removeSubInfo;
   const subName = req.query.subName;
-  const subNameValue = req.query.subNameValue;
   const removeSubInfo = !req.query.displaySubInfo ? false : !req.query.displaySubInfo;
   const displaySubInfo = req.query.displaySubInfo;
   console.log(`query: ${JSON.stringify(req.query)}`);
@@ -126,9 +124,9 @@ export default async function handler(req, res) {
     );
     const surgeProxies = supportedProxies.map((proxy) => {
       let common = ``;
-      if (subName && subNameValue) {
+      if (subName && subName) {
         console.log(`Subscription name detected, Adding to list.`);
-        common = `${proxy.name} - ${subNameValue} = ${proxy.type}, ${proxy.server}, ${proxy.port}`;
+        common = `${proxy.name} - ${subName} = ${proxy.type}, ${proxy.server}, ${proxy.port}`;
       } else {
         console.log(`Subscription name not detected, Adding to list.`);
         common = `${proxy.name} = ${proxy.type}, ${proxy.server}, ${proxy.port}`;
@@ -316,23 +314,23 @@ export default async function handler(req, res) {
       proxies.shift();
     }
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.setHeader('subscription-userinfo', `${subscriptionUserInfo}`);
+    // res.setHeader('subscription-userinfo', `${subscriptionUserInfo}`);
     res.status(200).send(
       `# Subscription URL: ${url}\n` +
       proxies.join("\n")
     );
   } else if (target === "clash") {
-    if (subName && subNameValue) {
+    if (subName) {
       for (let i = 0; i < config.proxies.length; i++) {
         const proxy = config.proxies[i];
         console.log(`Subscription name detected, Adding to list.`);
-        proxy.name = `${proxy.name} - ${subNameValue}`;
+        proxy.name = `${proxy.name} - ${subName}`;
       }
     }
     const response = YAML.stringify({ proxies: config.proxies });
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('subscription-userinfo', `${subscriptionUserInfo}`);
-    res.status(200).send(response);
+    res.status(200).send(`# Subscription URL: ${url}` + response);
   } else {
     res.status(400).send("Unsupported target: " + target);
   }
