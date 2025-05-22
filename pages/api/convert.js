@@ -105,8 +105,6 @@ export default async function handler(req, res) {
 
   console.log(`Parsing YAML`);
   let config = null;
-  // let removeSubInfo = false;
-  // let displaySubInfo = false;
   try {
     config = YAML.parse(configFile);
     console.log(`👌 Parsed YAML`);
@@ -120,23 +118,13 @@ export default async function handler(req, res) {
     return;
   }
 
+
+
   if (target === "surge") {
     const supportedProxies = config.proxies.filter((proxy) =>
       ["ss", "vmess", "trojan", "hysteria2", "tuic", "snell"].includes(proxy.type)
     );
     const surgeProxies = supportedProxies.map((proxy) => {
-      // Regex to detect subscription info in proxy name
-      // const trafficRegex = /(?:剩余|剩餘|剩下|余额|余額|流量|套餐|重置|到期|过期|有效|剩余时间|重置时间|剩余流量|剩餘流量|可用|remaining|left|data|transfer|quota)/i;
-      // const expiryRegex = /(?:过期|到期|有效期)/i;
-
-      // if (trafficRegex.test(proxy.name) || trafficRegex.test(proxy.name)) {
-      //   removeSubInfo = true;
-      //   console.log(`Subscription info detected, removing from list.`);
-      //   if (addSubInfo == true) {
-      //     displaySubInfo = true;
-      //     console.log(`Subscription info detected, adding to list.`);
-      //   }
-      // }
       let common = ``;
       if (subName && subNameValue) {
         console.log(`Subscription name detected, Adding to list.`);
@@ -333,10 +321,19 @@ export default async function handler(req, res) {
       `# Subscription URL: ${url}\n` +
       proxies.join("\n")
     );
-  } else {
+  } else if (target === "clash") {
+    if (subName && subNameValue) {
+      for (let i = 0; i < config.proxies.length; i++) {
+        const proxy = config.proxies[i];
+        console.log(`Subscription name detected, Adding to list.`);
+        proxy.name = `${proxy.name} - ${subNameValue}`;
+      }
+    }
     const response = YAML.stringify({ proxies: config.proxies });
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('subscription-userinfo', `${subscriptionUserInfo}`);
     res.status(200).send(response);
+  } else {
+    res.status(400).send("Unsupported target: " + target);
   }
 };
