@@ -1,4 +1,5 @@
 import axios from "axios";
+import { sendSGModuleResponse } from "../../shared-utils/surge_module_generator";
 
 export default async function handler(req, res) {
   const { url, format, lang } = req.query;
@@ -10,40 +11,9 @@ export default async function handler(req, res) {
   }
 
   if (format == ".sgmodule") {
-    // Determine subName: use query param, or extract from urlQueryParam, or from requestPath
-    // Constructing the absolute script-path:
-    const protocol = req.headers['x-forwarded-proto'] || (process.env.NODE_ENV === 'development' ? 'http' : 'https');
-    const host = req.headers['x-forwarded-host'] || req.headers.host;
-
-    // The script-path should be the URL that was requested, but without the .sgmodule suffix.
-    // If request was https://domain.com/api/subinfo.sgmodule?url=http://example.com/sub
-    // scriptPath should be https://domain.com/api/subinfo?url=http://example.com/sub (preserving query params if needed by the script itself)
-    // Or, if the script is *always* just the base path without .sgmodule and without original query params:
-    const scriptPathBase = req.url.replace(/\&format\S*/, ""); // e.g., /api/subinfo
-    let scriptPath = `${protocol}://${host}${scriptPathBase}`; // Assuming you want to keep the original URL query parameter
-    if (subName) {
-      scriptPath += `&subName=${subName}`;
-    }
-
-    const title = subName || url || `${protocol}://${host}${req.url}`; // Use original URL query for title if present
-
-    const sgmoduleStr = `#!name=${title} 订阅信息
-#!desc=获取${title}剩余流量信息以及套餐到期日期
-#!category=Subscription Info
-#!author=ous50
-#!icon=externaldrive.fill.badge.icloud=#007aff
-#!script-update-interval=43200
-
-[Panel]
-${subName}-Panel = script-name=${subName}-Script, title="${title} 订阅信息", update-interval=43200
-
-[Script]
-${subName}-Script = type=generic,timeout=10,script-path=https://raw.githubusercontent.com/getsomecat/GetSomeCats/Surge/modules/Panel/Sub-info/Moore/Sub-info.js,script-update-interval=0,argument=url=${req.query.url}&reset_day=1&title=${title}&icon=externaldrive.fill.badge.icloud=#007aff
-`;
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.status(200).send(sgmoduleStr);
-    return;
+    return sendSGModuleResponse(req, res);
   }
+
   console.log(`Fetching url: ${url}`);
   let subscriptionUserInfo;
   let userSubscriptionInfoStr;
@@ -129,3 +99,4 @@ ${subName}-Script = type=generic,timeout=10,script-path=https://raw.githubuserco
   res.setHeader('subscription-userinfo', `${subscriptionUserInfo}`);
   res.status(200).send(response);
 };
+

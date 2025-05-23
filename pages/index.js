@@ -5,6 +5,7 @@ import { SelectorIcon, DuplicateIcon } from "@heroicons/react/outline";
 import toast, { Toaster } from "react-hot-toast";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { generateSurgePanelLine, generateSurgeScriptLine, generateFullSgmodule } from "../shared-utils/surge_module_generator.js"; // 引入生成器函数
 
 
 let surgeManualURL =
@@ -132,10 +133,19 @@ ${subName || urlHost} = select, policy-path=${convertedUrl}
     return `${subName || urlHost}-SubInfo = script-name=${subName || urlHost}-SubInfo, title="${urlHost} 订阅信息", update-interval=43200`
   }, [url, subInfoUrl, urlHost, subName]);
 
+
   const surgeSubInfoPanelScript = useMemo(() => {
     if (!url.trim() || !subInfoUrl) return "";
-    return `${subName || urlHost}-SubInfo = type=generic, timeout=15, script-path=https://raw.githubusercontent.com/getsomecat/GetSomeCats/Surge/modules/Panel/Sub-info/Moore/Sub-info.js,script-update-interval=0,argument=url=${url}&reset_day=1&title=${subName || urlHost}&icon=externaldrive.fill.badge.icloud=#007aff
-`}, [url, subInfoUrl, urlHost, subName]);
+    //     return `${subName || urlHost}-SubInfo = type=generic, timeout=15, script-path=https://raw.githubusercontent.com/getsomecat/GetSomeCats/Surge/modules/Panel/Sub-info/Moore/Sub-info.js,script-update-interval=0,argument=url=${url}&reset_day=1&title=${subName || urlHost}&icon=externaldrive.fill.badge.icloud=#007aff
+    // `}, [url, subInfoUrl, urlHost, subName]);
+    return generateSurgeScriptLine({
+      scriptName: `${subName || urlHost}-SubInfo`,
+      timeout: 15,
+      scriptPath: "https://raw.githubusercontent.com/getsomecat/GetSomeCats/Surge/modules/Panel/Sub-info/Moore/Sub-info.js",
+      scriptUpdateInterval: 0,
+      argumentString: `url=${subInfoUrl}&reset_day=1&title=${subName || urlHost}&icon=externaldrive.fill.badge.icloud=#007aff`
+    });
+  }, [url, subInfoUrl, urlHost, subName]);
 
   const surgeSubInfoPanel = `[Panel]\n` + surgeSubInfoPanelPanel + `\n\n` + `[Script]\n` + surgeSubInfoPanelScript
 
@@ -211,7 +221,7 @@ ${subName || urlHost} = select, policy-path=${convertedUrl}
               onChange={(e) => setenableSubName(e.target.checked)}
             />
             <label htmlFor="enableSubName" className="text-sm text-gray-700 select-none">
-              启用订阅名称后缀
+              启用订阅名称（也会将此名称写在节点名称后面）
             </label>
           </div>
 
@@ -220,7 +230,7 @@ ${subName || urlHost} = select, policy-path=${convertedUrl}
             <div className="w-full mt-4">
               <input
                 className="w-full p-4 text-lg bg-white rounded-lg shadow-sm focus:outline-none"
-                placeholder="请输入订阅名称后缀 (例如：clash 或 xxcloud)"
+                placeholder="请输入订阅名称 (例如：clash 或 xxcloud)"
                 value={subName}
                 onChange={(e) => setsubName(e.target.value)}
               />

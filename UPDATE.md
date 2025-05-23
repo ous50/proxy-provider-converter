@@ -1,6 +1,41 @@
 # 更新日志 (UPDATE.md)
 
 ---
+## [2025-05-24] - 重构 Surge 模块生成逻辑并优化 API 处理 (Commit XXXXXXX)
+本次更新的核心是将 Surge (`.sgmodule`) 模块的生成逻辑抽象到一个全新的共享工具文件 `shared-utils/surge_module_generator.js` 中。这一重构显著提升了代码的模块化、可维护性和复用性，并对相关 API 的参数处理和响应逻辑进行了优化。
+> [!NOTE]
+> 新的 `surge_module_generator.js` 提供了一套标准的函数来构建 `.sgmodule` 文件的各个部分，使得未来对模块格式的调整或新增特性更为便捷。
+> [!IMPORTANT]
+> API `/api/convert.js` 中关于 `displaySubInfo` 和 `removeSubInfo` 参数的处理逻辑有所调整，现在主要通过 `removeSubInfo` 控制是否从结果中移除订阅信息。添加订阅信息的逻辑已被注释。同时，对于不支持的 `target` 类型，错误状态码已更改为 `502`。
+### ✨ 新增功能 (Features)
+*   **引入共享 Surge 模块生成器 (`surge_module_generator.js`) (DX 提升)**:
+    *   新增 `shared-utils/surge_module_generator.js` 文件，包含以下核心函数：
+        *   `buildScriptArgument(args)`: 构建并编码脚本参数字符串。
+        *   `generateSgmoduleHeader(params)`: 生成 `.sgmodule` 头部注释。
+        *   `generateSurgePanelLine(params)`: 生成 `[Panel]` 配置行。
+        *   `generateSurgeScriptLine(params)`: 生成 `[Script]` 配置行。
+        *   `generateFullSgmodule(data)`: 组合以上函数，生成完整的 `.sgmodule` 内容。
+        *   `sendSGModuleResponse(req, res)`: 封装了在 API 路由中处理请求、生成并发送 `.sgmodule` 响应的通用逻辑。
+    *   这一新增模块使得 `.sgmodule` 的创建更加规范、参数化和易于管理。
+### 🛠️ 优化与修复 (Improvements & Fixes)
+*   **API 端点重构与统一 (DX 提升/代码质量)**:
+    *   `pages/api/subinfo.js`: 在处理 `.sgmodule` 格式请求时，改用新的 `sendSGModuleResponse` 函数，移除了旧的内联生成逻辑。
+    *   `pages/api/subinfo.sgmodule.js`: 完全重写，直接调用 `sendSGModuleResponse` 函数，大幅简化了代码并消除了重复。
+*   **API `/api/convert.js` 逻辑调整 (功能优化)**:
+    *   `removeSubInfo` 和 `displaySubInfo` query 参数的布尔值转换逻辑更新为 `req.query.PARAM ? true : false`。
+    *   注释了基于 `displaySubInfo` 添加订阅信息的逻辑；现在由 `removeSubInfo` 为 `true` 时主动移除订阅信息。
+    *   新增 `lang` query 参数的接收（默认为 "zh-CN"），但目前未在转换逻辑中直接使用。
+    *   对于不支持的 `target`，HTTP 响应状态码从 `400` 更改为 `502`。
+    *   更新了部分 `console.log` 调试信息。
+*   **前端页面 (`pages/index.js`) 优化 (UX/DX 提升)**:
+    *   `surgeSubInfoPanelScript` 的生成改用 `generateSurgeScriptLine` 函数，提高了代码可读性和规范性。
+    *   更新了与“订阅名称”相关的 UI 标签和占位符文本，使其描述更清晰准确。
+### 🔧 其他 (Others)
+*   整体代码结构因模块化重构而更加清晰，降低了后续维护成本。
+*   移除了部分冗余的 `console.log` 或将其更新。
+
+
+---
 
 ## [2025-05-22] - Surge 订阅信息面板支持及多项优化 (Commit cf06965)
 

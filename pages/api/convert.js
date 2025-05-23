@@ -6,9 +6,11 @@ export default async function handler(req, res) {
   const url = req.query.url;
   const target = req.query.target;
   const subName = req.query.subName;
-  const removeSubInfo = !req.query.displaySubInfo ? false : !req.query.displaySubInfo;
-  const displaySubInfo = req.query.displaySubInfo;
+  const removeSubInfo = req.query.removeSubInfo ? true : false;
+  const displaySubInfo = req.query.displaySubInfo ? true : false;
+  const lang = req.query.lang || "zh-CN";
   console.log(`query: ${JSON.stringify(req.query)}`);
+  console.log({ "subName": subName, "removeSubInfo": removeSubInfo, "displaySubInfo": displaySubInfo });
   if (url === undefined) {
     res.status(400).send("Missing parameter: url");
     return;
@@ -125,10 +127,10 @@ export default async function handler(req, res) {
     const surgeProxies = supportedProxies.map((proxy) => {
       let common = ``;
       if (subName && subName) {
-        console.log(`Subscription name detected, Adding to list.`);
+        // console.log(`Subscription name detected, Adding to list.`);
         common = `${proxy.name} - ${subName} = ${proxy.type}, ${proxy.server}, ${proxy.port}`;
       } else {
-        console.log(`Subscription name not detected, Adding to list.`);
+        // console.log(`Subscription name not detected, Adding to list.`);
         common = `${proxy.name} = ${proxy.type}, ${proxy.server}, ${proxy.port}`;
       }
       // const common = `${proxy.name} = ${proxy.type}, ${proxy.server}, ${proxy.port}`;
@@ -301,15 +303,19 @@ export default async function handler(req, res) {
       return result;
     });
     const proxies = surgeProxies.filter((p) => p !== undefined);
+    // console.log(`Converted ${proxies.length} proxies`);
+    // console.log(`Proxies: ${proxies}`);
     // Add a dummy item at the beginning showing the subscription info if available
-    if (subscriptionUserInfo && displaySubInfo) {
-      const dummyItemExpiryDate = `Expires\：${subscriptionUserExpires} = http, 127.0.0.1, 65535`;
-      proxies.unshift(dummyItemExpiryDate);
-      const dummyItemRemaining = `Traffic\：${subscriptionUserUsed}\|${subscriptionUserRemaining} = http, 127.0.0.1,65535`;
-      proxies.unshift(dummyItemRemaining);
-    }
+    // if (subscriptionUserInfo && displaySubInfo) {
+    //   console.log(`Adding subscription info to the list`);
+    //   const dummyItemExpiryDate = `Expires\：${subscriptionUserExpires} = http, 127.0.0.1, 65535`;
+    //   proxies.unshift(dummyItemExpiryDate);
+    //   const dummyItemRemaining = `Traffic\：${subscriptionUserUsed}\|${subscriptionUserRemaining} = http, 127.0.0.1,65535`;
+    //   proxies.unshift(dummyItemRemaining);
+    // }
     // Remove subscription info from the list if detected
-    if (subscriptionUserInfo && removeSubInfo) {
+    if (removeSubInfo) {
+      console.log(`Removing subscription info from the list`);
       proxies.shift();
       proxies.shift();
     }
@@ -332,6 +338,6 @@ export default async function handler(req, res) {
     res.setHeader('subscription-userinfo', `${subscriptionUserInfo}`);
     res.status(200).send(`# Subscription URL: ${url}` + response);
   } else {
-    res.status(400).send("Unsupported target: " + target);
+    res.status(502).send("Internal Server Error.");
   }
 };
