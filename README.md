@@ -20,6 +20,11 @@ DEMO: [https://ppc.ous50.moe](https://ppc.ous50.moe)
 2. 打开 [Vercel.com](https://vercel.com)，使用 GitHub 登录。
 3. 等待部署完成后点击 Vercel 项目面板上的 Visit 按钮就可以访问你部署的版本了
 
+> [!NOTE]
+> 如果你想要自动跟上我的更新，可以在 Vercel 项目面板的 Settings -> Git -> Deploy Hooks 中添加一个新的 Deploy Hook，名称可以随意，URL 填写 `https://api.github.com/repos/ous50/proxy-provider-converter/dispatches`，然后在 Payload 中添加 `{ "event_type": "deploy" }`。这样每次我更新代码后，你的部署版本都会自动更新。
+>
+> 你也可以在 GitHub Action 中添加一个 Upstream Sync Action 来自动更新你的项目，具体请参考 [Upstream Sync 文档](./wiki/Upstream-Sync.zh-CN.md/)。
+
 ### 资源
 
 - [Metacubex(clash) Wiki 中的 Proxy Providers 章节](https://wiki.metacubex.one/config/proxy-providers/)

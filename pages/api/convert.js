@@ -155,7 +155,7 @@ export default async function handler(req, res) {
           if (proxy.plugin === "obfs") {
             const mode = proxy?.["plugin-opts"].mode;
             const host = proxy?.["plugin-opts"].host;
-            result = `${result}, obfs=${mode}${host ? `, obfs-host=example.com ${host}` : ""
+            result = `${result}, obfs=${mode}${host ? `, obfs-host=${host}` : ""
               }`;
           }
           break;
