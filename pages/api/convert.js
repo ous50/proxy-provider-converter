@@ -9,6 +9,10 @@ export default async function handler(req, res) {
   const removeSubInfo = req.query.removeSubInfo ? true : false;
   const displaySubInfo = req.query.displaySubInfo ? true : false;
   const lang = req.query.lang || "zh-CN";
+  let removeSubInfoFlag = false;
+  if (removeSubInfo === "true" || removeSubInfo === true) {
+    removeSubInfoFlag = true;
+  }
   console.log(`query: ${JSON.stringify(req.query)}`);
   console.log({ "subName": subName, "removeSubInfo": removeSubInfo, "displaySubInfo": displaySubInfo });
   if (url === undefined) {
@@ -17,14 +21,14 @@ export default async function handler(req, res) {
   }
 
   console.log(`Fetching url: ${url}`);
-  let configFile = null;
-  let subscriptionUserInfo = null;
-  let subscriptionUserUpload = null;
-  let subscriptionUserDownload = null;
-  let subscriptionUserTotal = null;
-  let subscriptionUserRemaining = null;
-  let subscriptionUserExpires = null;
-  let subscriptionUserUsed = null;
+  let configFile;
+  let subscriptionUserInfo;
+  let subscriptionUserUpload;
+  let subscriptionUserDownload;
+  let subscriptionUserTotal;
+  let subscriptionUserRemaining;
+  let subscriptionUserExpires;
+  let subscriptionUserUsed;
   try {
     const result = await axios({
       url,
@@ -104,7 +108,7 @@ export default async function handler(req, res) {
 
 
   console.log(`Parsing YAML`);
-  let config = null;
+  let config;
   try {
     config = YAML.parse(configFile);
     console.log(`👌 Parsed YAML`);
@@ -118,6 +122,40 @@ export default async function handler(req, res) {
     return;
   }
 
+  /**
+   * This function tags the proxy item with subscription info if available.
+   * Afterwards, the convertion script will remove the subscription info from the proxy name if removeSubInfo is passed.
+   * @param {*} proxy - The proxy item to be examined.
+   * @returns {void}
+   */
+  function tagSubinfoProxyItem(proxy) {
+    const expiryNameList = ["Expires", "Expiry", "过期", "到期", "有效期", "過期"];
+    const trafficNameList = ["Traffic", "流量", "流量剩余", "剩余流量", "剩余"];
+    const officialNameList = ["Official", "官方", "官网", "官網"];
+
+    for (let i = 0; i < expiryNameList.length; i++) {
+      if (proxy.name.includes(expiryNameList[i])) {
+        console.log(`Found expiry info from the proxy name: ${proxy.name}`);
+        removeSubInfoFlag = true;
+        continue
+      }
+    }
+    for (let i = 0; i < trafficNameList.length; i++) {
+      if (proxy.name.includes(trafficNameList[i])) {
+        console.log(`Found traffic info from the proxy name: ${proxy.name}`);
+        removeSubInfoFlag = true;
+        continue
+      }
+    }
+    for (let i = 0; i < officialNameList.length; i++) {
+      if (proxy.name.includes(officialNameList[i])) {
+        console.log(`Found official info from the proxy name: ${proxy.name}`);
+        removeSubInfoFlag = true;
+        continue
+      }
+    }
+  }
+
 
 
   if (target === "surge") {
@@ -126,6 +164,15 @@ export default async function handler(req, res) {
     );
     const surgeProxies = supportedProxies.map((proxy) => {
       let common = ``;
+      if (removeSubInfo) {
+        tagSubinfoProxyItem(proxy);
+        // Remove the subscription info proxy item from the proxy list
+        if (removeSubInfoFlag) {
+          console.log(`Removing subscription info from the proxy named: ${proxy.name}`);
+          removeSubInfoFlag = false;
+          return;
+        }
+      }
       if (subName && subName) {
         // console.log(`Subscription name detected, Adding to list.`);
         common = `${proxy.name} - ${subName} = ${proxy.type}, ${proxy.server}, ${proxy.port}`;
@@ -292,32 +339,20 @@ export default async function handler(req, res) {
         }
       }
       //  UDP 
-      if (proxy.udp === true) {
+      if (proxy.udp === true || req.query.udp === true) {
         result = `${result}, udp-relay=true`;
       }
       // TCP Fast Open
-      if (proxy["fast-open"] === true || proxy.tfo === true) {
+      if (proxy["fast-open"] === true || proxy.tfo === true || req.query.tfo === true) {
         result = `${result}, tfo=true`;
       }
       // console.log(`Converted proxy: ${result}`);
-      return result;
+      return result ? result : undefined;
     });
     const proxies = surgeProxies.filter((p) => p !== undefined);
-    // console.log(`Converted ${proxies.length} proxies`);
-    // console.log(`Proxies: ${proxies}`);
-    // Add a dummy item at the beginning showing the subscription info if available
-    // if (subscriptionUserInfo && displaySubInfo) {
-    //   console.log(`Adding subscription info to the list`);
-    //   const dummyItemExpiryDate = `Expires\：${subscriptionUserExpires} = http, 127.0.0.1, 65535`;
-    //   proxies.unshift(dummyItemExpiryDate);
-    //   const dummyItemRemaining = `Traffic\：${subscriptionUserUsed}\|${subscriptionUserRemaining} = http, 127.0.0.1,65535`;
-    //   proxies.unshift(dummyItemRemaining);
-    // }
-    // Remove subscription info from the list if detected
-    if (removeSubInfo) {
-      console.log(`Removing subscription info from the list`);
-      proxies.shift();
-      proxies.shift();
+    if (proxies.length === 0) {
+      res.status(400).send("No supported proxies in this config");
+      return;
     }
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     // res.setHeader('subscription-userinfo', `${subscriptionUserInfo}`);

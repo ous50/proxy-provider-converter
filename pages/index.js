@@ -74,7 +74,22 @@ export default function Home() {
     return `${host}/api/subinfo?${params.toString()}`;
   }, [host, url, subName]);
 
-  const subInfoSgModuleUrl = subInfoUrl + "&format=.sgmodule";
+  const subInfoSgModuleUrl = useMemo(() => {
+    if (!host || !url.trim()) {
+      return "";
+    }
+
+    const params = new URLSearchParams();
+    params.append("url", url);
+
+    if (enableSubName) {
+      if (subName.trim()) {
+        params.append("subName", subName);
+      }
+    }
+
+    return `${host}/api/subinfo.sgmodule?${params.toString()}`;
+  }, [host, url, subName]);
 
   const urlHost = useMemo(() => {
     if (!url.trim()) return ""; // 如果 url 为空或只有空格，返回空
@@ -95,7 +110,7 @@ export default function Home() {
     return `  - name: UseProvider
     type: select
     use:
-      - ${urlHost || "provider1"} 
+      - ${subName || urlHost || "provider1"} 
     proxies:
       - Proxy
       - DIRECT
@@ -106,11 +121,11 @@ export default function Home() {
 
   const clashConfigProxyProvider = useMemo(() => {
     if (!url.trim() || !convertedUrl) return "";
-    return `  ${urlHost || "provider1"}: 
+    return `  ${subName || urlHost || "provider1"}: 
     type: http
     url: ${convertedUrl} 
     interval: 3600
-    path: ./${urlHost || "provider1"}.yaml
+    path: ./${subName || urlHost || "provider1"}.yaml
     health-check:
       enable: true
       interval: 600
@@ -130,7 +145,7 @@ ${subName || urlHost} = select, policy-path=${convertedUrl}
 
   const surgeSubInfoPanelPanel = useMemo(() => {
     if (!url.trim() || !subInfoUrl) return "";
-    return `${subName || urlHost}-SubInfo = script-name=${subName || urlHost}-SubInfo, title="${urlHost} 订阅信息", update-interval=43200`
+    return `${subName || urlHost}-SubInfo = script-name=${subName || urlHost}-SubInfo, title="${subName || urlHost} 订阅信息", update-interval=43200`
   }, [url, subInfoUrl, urlHost, subName]);
 
 
@@ -143,7 +158,7 @@ ${subName || urlHost} = select, policy-path=${convertedUrl}
       timeout: 15,
       scriptPath: "https://raw.githubusercontent.com/getsomecat/GetSomeCats/Surge/modules/Panel/Sub-info/Moore/Sub-info.js",
       scriptUpdateInterval: 0,
-      argumentString: `url=${subInfoUrl}&reset_day=1&title=${subName || urlHost}&icon=externaldrive.fill.badge.icloud=#007aff`
+      argumentString: `url=${url}&title=${subName || urlHost}&icon=externaldrive.fill.badge.icloud=#007aff`
     });
   }, [url, subInfoUrl, urlHost, subName]);
 

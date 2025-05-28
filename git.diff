@@ -1,0 +1,236 @@
+diff --git a/pages/api/convert.js b/pages/api/convert.js
+index d8be097..c0f4bb2 100644
+--- a/pages/api/convert.js
++++ b/pages/api/convert.js
+@@ -9,6 +9,10 @@ export default async function handler(req, res) {
+   const removeSubInfo = req.query.removeSubInfo ? true : false;
+   const displaySubInfo = req.query.displaySubInfo ? true : false;
+   const lang = req.query.lang || "zh-CN";
++  let removeSubInfoFlag = false;
++  if (removeSubInfo === "true" || removeSubInfo === true) {
++    removeSubInfoFlag = true;
++  }
+   console.log(`query: ${JSON.stringify(req.query)}`);
+   console.log({ "subName": subName, "removeSubInfo": removeSubInfo, "displaySubInfo": displaySubInfo });
+   if (url === undefined) {
+@@ -17,14 +21,14 @@ export default async function handler(req, res) {
+   }
+ 
+   console.log(`Fetching url: ${url}`);
+-  let configFile = null;
+-  let subscriptionUserInfo = null;
+-  let subscriptionUserUpload = null;
+-  let subscriptionUserDownload = null;
+-  let subscriptionUserTotal = null;
+-  let subscriptionUserRemaining = null;
+-  let subscriptionUserExpires = null;
+-  let subscriptionUserUsed = null;
++  let configFile;
++  let subscriptionUserInfo;
++  let subscriptionUserUpload;
++  let subscriptionUserDownload;
++  let subscriptionUserTotal;
++  let subscriptionUserRemaining;
++  let subscriptionUserExpires;
++  let subscriptionUserUsed;
+   try {
+     const result = await axios({
+       url,
+@@ -104,7 +108,7 @@ export default async function handler(req, res) {
+ 
+ 
+   console.log(`Parsing YAML`);
+-  let config = null;
++  let config;
+   try {
+     config = YAML.parse(configFile);
+     console.log(`👌 Parsed YAML`);
+@@ -118,6 +122,40 @@ export default async function handler(req, res) {
+     return;
+   }
+ 
++  /**
++   * This function tags the proxy item with subscription info if available.
++   * Afterwards, the convertion script will remove the subscription info from the proxy name if removeSubInfo is passed.
++   * @param {*} proxy - The proxy item to be examined.
++   * @returns {void}
++   */
++  function tagSubinfoProxyItem(proxy) {
++    const expiryNameList = ["Expires", "Expiry", "过期", "到期", "有效期", "過期"];
++    const trafficNameList = ["Traffic", "流量", "流量剩余", "剩余流量", "剩余"];
++    const officialNameList = ["Official", "官方", "官网", "官網"];
++
++    for (let i = 0; i < expiryNameList.length; i++) {
++      if (proxy.name.includes(expiryNameList[i])) {
++        console.log(`Found expiry info from the proxy name: ${proxy.name}`);
++        removeSubInfoFlag = true;
++        continue
++      }
++    }
++    for (let i = 0; i < trafficNameList.length; i++) {
++      if (proxy.name.includes(trafficNameList[i])) {
++        console.log(`Found traffic info from the proxy name: ${proxy.name}`);
++        removeSubInfoFlag = true;
++        continue
++      }
++    }
++    for (let i = 0; i < officialNameList.length; i++) {
++      if (proxy.name.includes(officialNameList[i])) {
++        console.log(`Found official info from the proxy name: ${proxy.name}`);
++        removeSubInfoFlag = true;
++        continue
++      }
++    }
++  }
++
+ 
+ 
+   if (target === "surge") {
+@@ -126,6 +164,15 @@ export default async function handler(req, res) {
+     );
+     const surgeProxies = supportedProxies.map((proxy) => {
+       let common = ``;
++      if (removeSubInfo) {
++        tagSubinfoProxyItem(proxy);
++        // Remove the subscription info proxy item from the proxy list
++        if (removeSubInfoFlag) {
++          console.log(`Removing subscription info from the proxy named: ${proxy.name}`);
++          removeSubInfoFlag = false;
++          return;
++        }
++      }
+       if (subName && subName) {
+         // console.log(`Subscription name detected, Adding to list.`);
+         common = `${proxy.name} - ${subName} = ${proxy.type}, ${proxy.server}, ${proxy.port}`;
+@@ -292,32 +339,20 @@ export default async function handler(req, res) {
+         }
+       }
+       //  UDP 
+-      if (proxy.udp === true) {
++      if (proxy.udp === true || req.query.udp === true) {
+         result = `${result}, udp-relay=true`;
+       }
+       // TCP Fast Open
+-      if (proxy["fast-open"] === true || proxy.tfo === true) {
++      if (proxy["fast-open"] === true || proxy.tfo === true || req.query.tfo === true) {
+         result = `${result}, tfo=true`;
+       }
+       // console.log(`Converted proxy: ${result}`);
+-      return result;
++      return result ? result : undefined;
+     });
+     const proxies = surgeProxies.filter((p) => p !== undefined);
+-    // console.log(`Converted ${proxies.length} proxies`);
+-    // console.log(`Proxies: ${proxies}`);
+-    // Add a dummy item at the beginning showing the subscription info if available
+-    // if (subscriptionUserInfo && displaySubInfo) {
+-    //   console.log(`Adding subscription info to the list`);
+-    //   const dummyItemExpiryDate = `Expires\：${subscriptionUserExpires} = http, 127.0.0.1, 65535`;
+-    //   proxies.unshift(dummyItemExpiryDate);
+-    //   const dummyItemRemaining = `Traffic\：${subscriptionUserUsed}\|${subscriptionUserRemaining} = http, 127.0.0.1,65535`;
+-    //   proxies.unshift(dummyItemRemaining);
+-    // }
+-    // Remove subscription info from the list if detected
+-    if (removeSubInfo) {
+-      console.log(`Removing subscription info from the list`);
+-      proxies.shift();
+-      proxies.shift();
++    if (proxies.length === 0) {
++      res.status(400).send("No supported proxies in this config");
++      return;
+     }
+     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+     // res.setHeader('subscription-userinfo', `${subscriptionUserInfo}`);
+diff --git a/pages/index.js b/pages/index.js
+index 7472f5d..192e6ed 100644
+--- a/pages/index.js
++++ b/pages/index.js
+@@ -74,7 +74,22 @@ export default function Home() {
+     return `${host}/api/subinfo?${params.toString()}`;
+   }, [host, url, subName]);
+ 
+-  const subInfoSgModuleUrl = subInfoUrl + "&format=.sgmodule";
++  const subInfoSgModuleUrl = useMemo(() => {
++    if (!host || !url.trim()) {
++      return "";
++    }
++
++    const params = new URLSearchParams();
++    params.append("url", url);
++
++    if (enableSubName) {
++      if (subName.trim()) {
++        params.append("subName", subName);
++      }
++    }
++
++    return `${host}/api/subinfo.sgmodule?${params.toString()}`;
++  }, [host, url, subName]);
+ 
+   const urlHost = useMemo(() => {
+     if (!url.trim()) return ""; // 如果 url 为空或只有空格，返回空
+@@ -95,7 +110,7 @@ export default function Home() {
+     return `  - name: UseProvider
+     type: select
+     use:
+-      - ${urlHost || "provider1"} 
++      - ${subName || urlHost || "provider1"} 
+     proxies:
+       - Proxy
+       - DIRECT
+@@ -106,11 +121,11 @@ export default function Home() {
+ 
+   const clashConfigProxyProvider = useMemo(() => {
+     if (!url.trim() || !convertedUrl) return "";
+-    return `  ${urlHost || "provider1"}: 
++    return `  ${subName || urlHost || "provider1"}: 
+     type: http
+     url: ${convertedUrl} 
+     interval: 3600
+-    path: ./${urlHost || "provider1"}.yaml
++    path: ./${subName || urlHost || "provider1"}.yaml
+     health-check:
+       enable: true
+       interval: 600
+@@ -130,7 +145,7 @@ ${subName || urlHost} = select, policy-path=${convertedUrl}
+ 
+   const surgeSubInfoPanelPanel = useMemo(() => {
+     if (!url.trim() || !subInfoUrl) return "";
+-    return `${subName || urlHost}-SubInfo = script-name=${subName || urlHost}-SubInfo, title="${urlHost} 订阅信息", update-interval=43200`
++    return `${subName || urlHost}-SubInfo = script-name=${subName || urlHost}-SubInfo, title="${subName || urlHost} 订阅信息", update-interval=43200`
+   }, [url, subInfoUrl, urlHost, subName]);
+ 
+ 
+@@ -143,7 +158,7 @@ ${subName || urlHost} = select, policy-path=${convertedUrl}
+       timeout: 15,
+       scriptPath: "https://raw.githubusercontent.com/getsomecat/GetSomeCats/Surge/modules/Panel/Sub-info/Moore/Sub-info.js",
+       scriptUpdateInterval: 0,
+-      argumentString: `url=${subInfoUrl}&reset_day=1&title=${subName || urlHost}&icon=externaldrive.fill.badge.icloud=#007aff`
++      argumentString: `url=${url}&title=${subName || urlHost}&icon=externaldrive.fill.badge.icloud=#007aff`
+     });
+   }, [url, subInfoUrl, urlHost, subName]);
+ 
+diff --git a/wiki/Upstream-Sync.en-US.md b/wiki/Upstream-Sync.en-US.md
+index 226cfb9..80683fd 100644
+--- a/wiki/Upstream-Sync.en-US.md
++++ b/wiki/Upstream-Sync.en-US.md
+@@ -1,6 +1,6 @@
+ # Enable auto sync with upstream
+ > [!NOTE]
+-> - You need to generate a GitHub Token and set it in the project settings under Secrets with the name `PAT_FOR_SYNC`, otherwise automatic updates will not work.
++> - Users are required to generate a PAT(Personal access token) with `Actions`, `Commit statuses`, `Contents`, `Pull requests` and `Workflows` permissions and set it in the project settings under Secrets with the name `PAT_FOR_SYNC`, otherwise automatic updates will not work.
+ > - If you encounter errors while executing Upstream Sync, try running it manually again.
+ 
+ ## Upstream Sync Automatic Updates
+diff --git a/wiki/Upstream-Sync.zh-CN.md b/wiki/Upstream-Sync.zh-CN.md
+index a50dc7a..e8cb781 100644
+--- a/wiki/Upstream-Sync.zh-CN.md
++++ b/wiki/Upstream-Sync.zh-CN.md
+@@ -1,6 +1,6 @@
+ # 启动自动更新
+ > [!NOTE]
+-> - 你需要自己生成 GitHub Token，并将其在项目设置中 Secrets，名称为 `PAT_FOR_SYNC`，否则无法进行自动更新。
++> - 用户需要生成一个具有 `Actions`、`Commit statuses`、`Contents`、`Pull requests` 和 `Workflows` 权限的个人访问令牌（PAT），并在项目设置中的 Secrets 中设置名称为 `PAT_FOR_SYNC`，否则自动更新将无法工作。
+ > - 如果你在执行 Upstream Sync 时遇到错误，请尝试手动执再行一次
+ 
+ ## Upstream Sync 自动更新

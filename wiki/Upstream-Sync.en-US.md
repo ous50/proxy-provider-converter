@@ -1,6 +1,6 @@
 # Enable auto sync with upstream
 > [!NOTE]
-> - You need to generate a GitHub Token and set it in the project settings under Secrets with the name `PAT_FOR_SYNC`, otherwise automatic updates will not work.
+> - Users are required to generate a PAT(Personal access token) with `Actions`, `Commit statuses`, `Contents`, `Pull requests` and `Workflows` permissions and set it in the project settings under Secrets with the name `PAT_FOR_SYNC`, otherwise automatic updates will not work.
 > - If you encounter errors while executing Upstream Sync, try running it manually again.
 
 ## Upstream Sync Automatic Updates

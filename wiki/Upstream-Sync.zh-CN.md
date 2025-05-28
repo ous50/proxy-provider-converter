@@ -1,6 +1,6 @@
 # 启动自动更新
 > [!NOTE]
-> - 你需要自己生成 GitHub Token，并将其在项目设置中 Secrets，名称为 `PAT_FOR_SYNC`，否则无法进行自动更新。
+> - 用户需要生成一个具有 `Actions`、`Commit statuses`、`Contents`、`Pull requests` 和 `Workflows` 权限的个人访问令牌（PAT），并在项目设置中的 Secrets 中设置名称为 `PAT_FOR_SYNC`，否则自动更新将无法工作。
 > - 如果你在执行 Upstream Sync 时遇到错误，请尝试手动执再行一次
 
 ## Upstream Sync 自动更新

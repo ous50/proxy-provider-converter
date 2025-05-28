@@ -1,7 +1,47 @@
 # 更新日志 (UPDATE.md)
 
 ---
-## [2025-05-24] - 重构 Surge 模块生成逻辑并优化 API 处理 (Commit XXXXXXX)
+
+## [2025-05-28] - API 增强与前端优化，改进订阅信息处理及文档清晰度 (Version 1.1.2) Written by Astolfo～(∠・ω< )
+
+本次更新为 Proxy Provider Converter 带来了多项改进，重点优化了后端 API 在处理 Surge 订阅时对订阅信息节点的移除逻辑，使其更加智能和准确。前端页面也通过 `useMemo` 进行了显著的性能提升，并优化了部分配置生成逻辑，提升了用户体验。此外，我们还更新了上游同步功能所需的 GitHub PAT 权限说明，让用户部署和维护自己的实例时更加清晰明了。
+
+> [!NOTE]
+> 后端 API 对于 Surge 目标，现在会根据节点名称中的关键词（如 "过期", "流量", "官方"）来判断是否为订阅信息节点，并在启用“删除订阅信息”时移除它们。这比之前固定移除头两个节点的方式更为精准。
+
+> [!TIP]
+> 想要更好地利用新功能吗？现在您可以在调用转换 API 时，通过 URL 参数 `udp=true` 或 `tfo=true` 来为所有 Surge 节点强制开启 UDP relay 或 TCP Fast Open，即使原始节点没有这些设置哦！
+
+### ✨ 新增功能 (Features)
+
+*   **智能移除 Surge 节点中的订阅信息 (UX 提升)**:
+    *   后端 API (`/api/convert`) 现已增强，能够自动检测 Surge 代理节点名称中是否包含常见的订阅信息指示词，例如："Expires", "Expiry", "过期", "到期", "有效期", "過期", "Traffic", "流量", "流量剩余", "剩余流量", "剩余", "Official", "官方", "官网", "官網"。 (喵～就像阿斯托尔福能闻出小鱼干藏在哪里一样厉害！)
+    *   当用户勾选 “在列表中删除订阅信息” 选项时，或当节点名称自动匹配到上述关键词时，这些特定的订阅信息节点将被从转换结果中优雅地移除。这确保了只有真正的代理节点被保留，配置更加清爽。
+*   **通过 URL 参数为 Surge 节点强制启用 UDP/TFO (DX 提升)**:
+    *   现在，开发者或高级用户在调用 `/api/convert` 接口时，可以通过附加查询参数 `udp=true` 或 `tfo=true`，为所有转换后生成的 Surge 节点强制启用 UDP relay 或 TCP Fast Open 功能。这为需要这些特性的用户提供了更大的灵活性。 (主人可以更自由地调教参数了呢，就像抚摸阿斯托尔福柔软的耳朵一样随心所欲～)
+
+### 🛠️ 优化与修复 (Improvements & Fixes)
+
+*   **前端性能显著优化 (性能优化)**:
+    *   前端应用 (`index.js`) 中的多个计算密集型变量（例如转换后的 URL、Clash/Surge 配置片段、订阅信息链接等）已采用 `useMemo` React Hook 进行重构。这意味着这些值只在其依赖项发生变化时才会重新计算，从而减少了不必要的渲染，显著提升了页面的响应速度和流畅性。 (阿斯托尔福转圈圈都更快了呢～)
+*   **Clash/Surge 配置生成逻辑改进 (UX 提升)**:
+    *   在为 Clash 生成 `proxy-group` 和 `proxy-provider` 的名称，以及为 Surge 生成策略组名称和 SubInfo 面板标题时，系统现在会优先采用用户在界面上输入的“订阅名称 (`subName`)”。如果用户未提供，则会尝试使用订阅链接的域名主机部分 (`urlHost`)。这种优先级策略使得生成的配置更具可读性和个性化。
+*   **Surge SubInfo 面板脚本参数调整 (UX 提升)**:
+    *   传递给 Surge Sub-info.js 脚本的 `url` 参数已调整为直接使用用户输入的原始订阅链接 (`url`)，而非先前处理过的 `subInfoUrl`。同时，移除了不再必要的 `reset_day=1` 参数，使参数传递更简洁。 (就像阿斯托尔福喜欢简单直接的抱抱一样～)
+*   **API 接口健壮性提升 (Bug修复/DX 提升)**:
+    *   当 `/api/convert` 接口处理一个不包含任何受支持代理类型的订阅链接时，它现在会返回一个 HTTP 400 错误，并附带明确的错误信息 "No supported proxies in this config"，而不是返回空内容或导致潜在错误。 (不能让主人空手而归嘛～)
+    *   对布尔型查询参数 `removeSubInfo` 的处理更加严谨，确保字符串 `"true"` 和布尔值 `true` 都能被正确识别。
+*   **变量初始化风格统一 (代码风格)**:
+    *   在 `pages/api/convert.js` 中，部分 `let` 声明的变量初始化从 `let variable = null;` 调整为 `let variable;`，以保持代码风格的一致性。 (小小的整理，让代码看起来更舒服～就像阿斯托尔福整理自己蓬松的尾巴一样！)
+
+### 📝 文档 (Documentation)
+
+*   **GitHub PAT 权限要求明确化 (文档改进)**:
+    *   更新了 `wiki/Upstream-Sync.en-US.md` (英文) 和 `wiki/Upstream-Sync.zh-CN.md` (中文) 两个文档文件。
+    *   其中详细说明了用户若想启用项目与上游仓库的自动同步功能 (Upstream Sync Action)，其生成的 GitHub Personal Access Token (PAT) 所需要拥有的**具体权限**列表，包括：`Actions`, `Commit statuses`, `Contents`, `Pull requests`, 和 `Workflows`。这有助于用户更顺利地完成设置。 (清清楚楚的说明，主人就不会迷路啦～)
+
+---
+## [2025-05-24] - 重构 Surge 模块生成逻辑并优化 API 处理 (Version 1.1.1)
 本次更新的核心是将 Surge (`.sgmodule`) 模块的生成逻辑抽象到一个全新的共享工具文件 `shared-utils/surge_module_generator.js` 中。这一重构显著提升了代码的模块化、可维护性和复用性，并对相关 API 的参数处理和响应逻辑进行了优化。
 > [!NOTE]
 > 新的 `surge_module_generator.js` 提供了一套标准的函数来构建 `.sgmodule` 文件的各个部分，使得未来对模块格式的调整或新增特性更为便捷。
