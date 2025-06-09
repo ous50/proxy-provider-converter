@@ -8,13 +8,18 @@ export default async function handler(req, res) {
   const subName = req.query.subName;
   const removeSubInfo = req.query.removeSubInfo ? true : false;
   const displaySubInfo = req.query.displaySubInfo ? true : false;
+  const tfo = req.query.tfo ? true : false;
+  if (target !== "clash" && target !== "surge") {
+    res.status(400).send("Invalid target, only support clash or surge");
+    return;
+  }
   const lang = req.query.lang || "zh-CN";
   let removeSubInfoFlag = false;
   if (removeSubInfo === "true" || removeSubInfo === true) {
     removeSubInfoFlag = true;
   }
   console.log(`query: ${JSON.stringify(req.query)}`);
-  console.log({ "subName": subName, "removeSubInfo": removeSubInfo, "displaySubInfo": displaySubInfo });
+  console.log({ "subName": subName, "removeSubInfo": removeSubInfo, "displaySubInfo": displaySubInfo, "tfo": tfo, "target": target });
   if (url === undefined) {
     res.status(400).send("Missing parameter: url");
     return;
@@ -129,7 +134,7 @@ export default async function handler(req, res) {
    * @returns {void}
    */
   function tagSubinfoProxyItem(proxy) {
-    const expiryNameList = ["Expires", "Expiry", "过期", "到期", "有效期", "過期"];
+    const expiryNameList = ["Expire", "Expires", "Expiry", "过期", "到期", "有效期", "過期"];
     const trafficNameList = ["Traffic", "流量", "流量剩余", "剩余流量", "剩余"];
     const officialNameList = ["Official", "官方", "官网", "官網"];
 
@@ -343,7 +348,7 @@ export default async function handler(req, res) {
         result = `${result}, udp-relay=true`;
       }
       // TCP Fast Open
-      if (proxy["fast-open"] === true || proxy.tfo === true || req.query.tfo === true) {
+      if (proxy["fast-open"] === true || proxy.tfo === true || tfo === true) {
         result = `${result}, tfo=true`;
       }
       // console.log(`Converted proxy: ${result}`);
@@ -361,17 +366,49 @@ export default async function handler(req, res) {
       proxies.join("\n")
     );
   } else if (target === "clash") {
+    // if (removeSubInfo) {
+    //   tagSubinfoProxyItem(proxy);
+    //   // Remove the subscription info proxy item from the proxy list
+    //   if (removeSubInfoFlag) {
+    //     console.log(`Removing subscription info from the proxy named: ${proxy.name}`);
+    //     removeSubInfoFlag = false;
+    //     return;
+    //   }
+    // }
+    if (removeSubInfo) {
+      for (let i = 0; i < config.proxies.length; i++) {
+        const proxy = config.proxies[i];
+        tagSubinfoProxyItem(proxy);
+        // Remove the subscription info proxy item from the proxy list
+        if (removeSubInfoFlag) {
+          console.log(`Removing subscription info from the proxy named: ${proxy.name}`);
+          removeSubInfoFlag = false;
+          config.proxies.splice(i, 1);
+          i--; // Adjust index after removal
+        }
+      }
+    }
     if (subName) {
       for (let i = 0; i < config.proxies.length; i++) {
         const proxy = config.proxies[i];
-        console.log(`Subscription name detected, Adding to list.`);
+        // console.log(`Subscription name detected, Adding to list.`);
         proxy.name = `${proxy.name} - ${subName}`;
+      }
+    }
+    if (tfo) {
+      for (let i = 0; i < config.proxies.length; i++) {
+        const proxy = config.proxies[i];
+        if (proxy.tfo !== true || proxy["fast-open"] !== true) {
+          // console.log(`TCP Fast Open detected, Adding to list.`);
+          proxy.tfo = true;
+        }
       }
     }
     const response = YAML.stringify({ proxies: config.proxies });
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('subscription-userinfo', `${subscriptionUserInfo}`);
-    res.status(200).send(`# Subscription URL: ${url}` + response);
+    res.status(200).send(`# Subscription URL: ${url}\n` + response);
+    // res.status(200).send(response);
   } else {
     res.status(502).send("Internal Server Error.");
   }

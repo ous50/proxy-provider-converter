@@ -19,6 +19,7 @@ export default function Home() {
   const [displaySubInfo, setDisplaySubInfo] = useState(false);
   const [removeSubInfo, setRemoveSubInfo] = useState(false);
   const [enableSubName, setenableSubName] = useState(false);
+  const [tfo, setTfo] = useState(false);
   const [subName, setsubName] = useState("");
   const [host, setHost] = useState("");
 
@@ -37,13 +38,15 @@ export default function Home() {
     const params = new URLSearchParams();
     params.append("url", url);
 
+    if (removeSubInfo) {
+      params.append("removeSubInfo", "true");
+    }
+
     if (target === "surge") {
       if (displaySubInfo) {
         params.append("displaySubInfo", "true");
       }
-      if (removeSubInfo) {
-        params.append("removeSubInfo", "true");
-      }
+
     }
 
     if (enableSubName) {
@@ -52,10 +55,14 @@ export default function Home() {
       }
     }
 
+    if (tfo) {
+      params.append("tfo", "true");
+    }
+
     params.append("target", target);
 
     return `${host}/api/convert?${params.toString()}`;
-  }, [host, url, displaySubInfo, removeSubInfo, subName, target]);
+  }, [host, url, displaySubInfo, removeSubInfo, tfo, subName, target]);
 
   const subInfoUrl = useMemo(() => {
     if (!host || !url.trim()) {
@@ -226,6 +233,67 @@ ${subName || urlHost} = select, policy-path=${convertedUrl}
             </div>
           </div>
 
+          {/* Surge特定选项 (条件渲染) */}
+          {target === "surge" && (
+            <div className="w-full mt-4 space-y-2 md:space-y-0 md:flex md:gap-4">
+              <div className="flex items-center gap-2">
+                {/* 修改后的 displaySubInfo input */}
+                <input
+                  type="checkbox"
+                  id="displaySubInfo"
+                  className="h-5 w-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+                  checked={displaySubInfo}
+                  onChange={(e) => {
+                    const isChecked = e.target.checked;
+                    setDisplaySubInfo(isChecked);
+                    if (isChecked) {
+                      setRemoveSubInfo(false);
+                    }
+                  }}
+                />
+                <label htmlFor="displaySubInfo" className="text-sm text-gray-700 select-none">
+                  在列表中加入订阅信息
+                </label>
+              </div>
+
+            </div>
+          )}
+
+          {/* 去除订阅信息复选框 */}
+          <div className="flex items-center gap-2 mt-4">
+            {/* 修改后的 removeSubInfo input */}
+            <input
+              type="checkbox"
+              id="removeSubInfo"
+              className="h-5 w-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+              checked={removeSubInfo}
+              onChange={(e) => {
+                const isChecked = e.target.checked;
+                setRemoveSubInfo(isChecked);
+                if (isChecked) {
+                  setDisplaySubInfo(false);
+                }
+              }}
+            />
+            <label htmlFor="removeSubInfo" className="text-sm text-gray-700 select-none">
+              在列表中删除订阅信息
+            </label>
+          </div>
+
+          {/* 开启强制添加 tfo 复选框 */}
+          <div className="flex items-center gap-2 mt-4">
+            <input
+              type="checkbox"
+              id="forceTfo"
+              className="h-5 w-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+              checked={tfo}
+              onChange={(e) => setTfo(e.target.checked)}
+            />
+            <label htmlFor="forceTfo" className="text-sm text-gray-700 select-none">
+              强制添加 tfo 参数
+            </label>
+          </div>
+
           {/* 启用订阅名称后缀复选框 */}
           <div className="flex items-center w-full gap-2 mt-4">
             <input
@@ -249,50 +317,6 @@ ${subName || urlHost} = select, policy-path=${convertedUrl}
                 value={subName}
                 onChange={(e) => setsubName(e.target.value)}
               />
-            </div>
-          )}
-
-          {/* Surge特定选项 (条件渲染) */}
-          {target === "surge" && (
-            <div className="w-full mt-4 space-y-2 md:space-y-0 md:flex md:gap-4">
-              <div className="flex items-center gap-2">
-                {/* 修改后的 displaySubInfo input */}
-                <input
-                  type="checkbox"
-                  id="displaySubInfo"
-                  className="h-5 w-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
-                  checked={displaySubInfo}
-                  onChange={(e) => {
-                    const isChecked = e.target.checked;
-                    setDisplaySubInfo(isChecked);
-                    if (isChecked) {
-                      setRemoveSubInfo(false);
-                    }
-                  }}
-                />
-                <label htmlFor="displaySubInfo" className="text-sm text-gray-700 select-none">
-                  在列表中加入订阅信息
-                </label>
-              </div>
-              <div className="flex items-center gap-2">
-                {/* 修改后的 removeSubInfo input */}
-                <input
-                  type="checkbox"
-                  id="removeSubInfo"
-                  className="h-5 w-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
-                  checked={removeSubInfo}
-                  onChange={(e) => {
-                    const isChecked = e.target.checked;
-                    setRemoveSubInfo(isChecked);
-                    if (isChecked) {
-                      setDisplaySubInfo(false);
-                    }
-                  }}
-                />
-                <label htmlFor="removeSubInfo" className="text-sm text-gray-700 select-none">
-                  在列表中删除订阅信息
-                </label>
-              </div>
             </div>
           )}
 
