@@ -1,6 +1,8 @@
 import YAML from "yaml";
 import axios from "axios";
 import crypto from "crypto";
+import https from "https";
+
 
 export default async function handler(req, res) {
   const url = req.query.url;
@@ -34,6 +36,7 @@ export default async function handler(req, res) {
   let subscriptionUserRemaining;
   let subscriptionUserExpires;
   let subscriptionUserUsed;
+
   try {
     const result = await axios({
       url,
@@ -41,6 +44,9 @@ export default async function handler(req, res) {
         "User-Agent":
           "clash.meta",
       },
+      httpsAgent: new https.Agent({
+        rejectUnauthorized: false,
+      }),
     });
     configFile = result.data;
     function formatBytes(bytes, decimals = 2) {
