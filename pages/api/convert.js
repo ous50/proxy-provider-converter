@@ -118,13 +118,25 @@ export default async function handler(req, res) {
 
 
 
-  console.log(`Parsing YAML`);
+  console.log(`Parsing config`);
   let config;
   try {
-    config = YAML.parse(configFile);
-    console.log(`👌 Parsed YAML`);
+    // 检查configFile是字符串还是已经解析好的对象
+    if (typeof configFile === 'string') {
+      // 如果是字符串，说明是YAML或者未被axios解析的JSON，用YAML.parse处理
+      console.log(`Input is a string, parsing as YAML...`);
+      config = YAML.parse(configFile);
+    } else if (typeof configFile === 'object' && configFile !== null) {
+      // 如果是对象，说明axios已经把它从JSON解析好了，直接用就行
+      console.log(`Input is an object, using directly.`);
+      config = configFile;
+    } else {
+      // 兜底处理一下其他异常情况
+      throw new Error("Unsupported config format");
+    }
+    console.log(`👌 Parsed config`);
   } catch (error) {
-    res.status(500).send(`Unable parse config, error: ${error}`);
+    res.status(500).send(`Unable to parse config, error: ${error}`);
     return;
   }
 
