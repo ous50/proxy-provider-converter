@@ -2,45 +2,9 @@ import YAML from "yaml";
 import axios from "axios";
 import crypto from "crypto";
 import https from "https";
+import { parseUri } from "../lib/parser";
 
-function parseSIP002(uri) {
-  try {
-    const url = new URL(uri);
-    const name = decodeURIComponent(url.hash.substring(1));
-    const userInfo = Buffer.from(url.username, 'base64').toString('utf8').split(':');
-    
-    const proxy = {
-      name: name,
-      type: 'ss',
-      server: url.hostname,
-      port: parseInt(url.port, 10),
-      cipher: userInfo[0],
-      password: userInfo[1],
-    };
 
-    const pluginParams = new URLSearchParams(url.search);
-    if (pluginParams.has('plugin')) {
-      const pluginStr = pluginParams.get('plugin');
-      const parts = pluginStr.split(';');
-      const pluginData = {};
-      parts.forEach(part => {
-        const [key, value] = part.split('=');
-        pluginData[key] = value;
-      });
-
-      proxy.plugin = pluginData.obfs ? 'simple-obfs' : 'v2ray-plugin' // 简单判断
-      proxy['plugin-opts'] = {
-        mode: pluginData.obfs,
-        host: pluginData['obfs-host']
-      };
-    }
-    
-    return proxy;
-  } catch (e) {
-    console.error(`Failed to parse SIP002 URI: ${uri}`, e);
-    return null;
-  }
-}
 
 export default async function handler(req, res) {
   const url = req.query.url;
@@ -78,9 +42,13 @@ export default async function handler(req, res) {
   try {
     const result = await axios({
       url,
+      // headers: {
+      //   "User-Agent":
+      //     "clash.meta",
+      // },
       headers: {
         "User-Agent":
-          "clash.meta",
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15",
       },
       httpsAgent: new https.Agent({
         rejectUnauthorized: false,
@@ -156,51 +124,58 @@ export default async function handler(req, res) {
 
 
 
-  console.log(`Parsing config`);
+  console.log(`Parsing config...`);
   let config;
   try {
-    // 检查configFile是字符串还是已经解析好的对象
     if (typeof configFile === 'string') {
-      let isSIP002List = false;
-      try {
-        // 尝试Base64解码
-        const decoded = Buffer.from(configFile, 'base64').toString('utf8');
-        // 如果解码后的内容包含ss://或vmess://等，就认为是节点列表
-        if (decoded.includes('ss://') || decoded.includes('vmess://')) {
-          console.log('Detected base64 encoded node list.');
-          const uris = decoded.split(/\r?\n/).filter(line => line.trim() !== '');
-          const proxies = uris.map(uri => {
-            if (uri.startsWith('ss://')) {
-              return parseSIP002(uri); // 调用我们新加的函数
-            }
-            // 这里还可以为 vmess://, trojan:// 等添加解析器
-            return null;
-          }).filter(p => p !== null);
+      const trimmedConfig = configFile.trim();
+      
+      // Step 1: Check for plain text node list (ss://, vmess://, etc.)
+      if (trimmedConfig.startsWith('ss://') || trimmedConfig.startsWith('vmess://') || trimmedConfig.startsWith('trojan://')) {
+        console.log('Plain text node list detected.');
+        const uris = trimmedConfig.split(/\r?\n/).filter(line => line.trim() !== '');
+        const proxies = uris.map(parseUri).filter(p => p !== null);
+        config = { proxies: proxies };
 
-          config = { proxies: proxies };
-          isSIP002List = true;
+      } else {
+        // Step 2: If not plain text, attempt to decode from Base64
+        let isBase64List = false;
+        try {
+          const decoded = Buffer.from(trimmedConfig, 'base64').toString('utf8');
+          const trimmedDecoded = decoded.trim();
+          if (trimmedDecoded.startsWith('ss://') || trimmedDecoded.startsWith('vmess://')) {
+            console.log('Base64 encoded node list detected.');
+            isBase64List = true;
+            const uris = trimmedDecoded.split(/\r?\n/).filter(line => line.trim() !== '');
+            const proxies = uris.map(parseUri).filter(p => p !== null);
+            config = { proxies: proxies };
+          }
+        } catch (e) {
+          // Decoding failed, it's not a Base64 encoded list. Safe to ignore.
+          console.error(e);
         }
-      } catch (e) {
-        // Base64解码失败，说明它可能就是普通的YAML/JSON，忽略错误继续执行
-      }
 
-      if (!isSIP002List) {
-        // 如果是字符串，说明是YAML或者未被axios解析的JSON，用YAML.parse处理
-        console.log(`Input is a string, parsing as YAML...`);
-        config = YAML.parse(configFile);
+        // Step 3: If neither, treat as a standard YAML/JSON subscription
+        if (!isBase64List) {
+          console.log('Assuming standard subscription format, attempting to parse as YAML/JSON...');
+          config = YAML.parse(configFile);
+        }
       }
-
     } else if (typeof configFile === 'object' && configFile !== null) {
-      // 如果是对象，说明axios已经把它从JSON解析好了，直接用就行
-      console.log(`Input is an object, using directly.`);
+      // Already parsed by axios as JSON
+      console.log('Input is a pre-parsed object, using directly.');
       config = configFile;
     } else {
-      // 兜底处理一下其他异常情况
-      throw new Error("Unsupported config format");
+      throw new Error("Unsupported config format.");
     }
-    console.log(`👌 Parsed config`);
+    
+    if (!config || !config.proxies || config.proxies.length === 0) {
+      throw new Error("No proxies found after parsing.");
+    }
+
+    console.log('Config parsing complete.');
   } catch (error) {
-    res.status(500).send(`Unable to parse config, error: ${error}`);
+    res.status(500).send(`Failed to parse config file. Error: ${error.message}`);
     return;
   }
 
