@@ -2,7 +2,7 @@ import YAML from "yaml";
 import axios from "axios";
 import crypto from "crypto";
 import https from "https";
-import { parseUri } from "../lib/parser";
+import { parseUri } from "../../lib/parser";
 
 
 
